@@ -1,0 +1,458 @@
+% !TeX root = ./00-main.tex
+% ============================================================================
+% Chapter 4 -- Discussion and Conclusions
+% DRAFT scaffold (2026-07-28) for AJ to edit into final voice.
+% - Every quantitative claim traces to the verified Results chapter / real parquets.
+% - Citations are INLINE TEXT PLACEHOLDERS in (parentheses) or [cite], per the
+%   template bibliography rule -- swap for \autocite{} via Zotero later. Do NOT
+%   treat any placeholder as a real key. Placeholders needing a source are listed
+%   at the bottom of this file in a comment block.
+% - No template machinery touched.
+% ============================================================================
+
+\chapter{Discussion and Conclusions} \label{chap:discussion}
+
+\section{Principal findings}
+
+This work asked a single, deliberately narrow question: during premalignant epithelial progression,
+does the local tissue microenvironment alter the progression-aligned regulatory state of an epithelial
+cell beyond what its own intrinsic state already predicts, and if so, through which regulatory programs
+and at what spatial scale. StageBridge answered that question with a structured universal differential
+equation that separates an intrinsic regulatory-progression field from a niche-gated context field and
+reads out their difference as a per-program, conditional context residual, $R_{\text{cond}}$. Three
+results follow, and they are best stated together because their tension is the contribution.
+
+First, a context-associated component of progression exists and is reproducible. On the preinvasive
+AAH$\rightarrow$AIS edge, twenty-nine regulatory programs carried context residuals whose held-out
+confidence intervals excluded zero with sign consistent across all five patient-held-out folds and
+across leave-one-donor-out resampling; twenty-eight programs met the same bar on the AIS$\rightarrow$
+invasive edge. The stable set was a coordinated axis---p53, WNT, Trail, and AP-1 (FOS) gaining context
+weight while interferon (IRF9) and the TGF$\beta$ effector SMAD4 lost it---rather than a scatter of
+isolated hits, and it was directionally concordant with independent co-expression analyses of the same
+tissue. That a small, sign-consistent, program-resolved residual survives patient-level resampling is
+the positive result: tissue context is associated with additional regulatory displacement beyond the
+progression predicted from epithelial state alone.
+
+Second, and on the same data, that contextual information did not resolve at the receiver-local scale.
+A model given each cell's own local niche had a lower mean endpoint distance than self-only transport
+and was favored in four of five folds, but the paired difference did not reach significance ($8.76$
+semantic Sinkhorn units, $95\%$ CI $[-2.83, +20.35]$, $P \approx 0.10$), and local context was
+statistically equivalent to a stratum-matched shuffle of the same niche features ($0.08$ units,
+$[-1.10, +1.26]$). The well-powered result is thus the equivalence to shuffled context, not a
+demonstrated advantage over self-only: cell-resolved niche neither clears self-only with significance
+nor separates from a marginal-structure-preserving shuffle. A variance
+decomposition of the local composition features supplied the reason---$85$ to $96\%$ of the variance in
+macrophage, fibroblast, and CAF abundance was receiver-local and stage-invariant, leaving little
+stage-aligned signal for a cell-resolved context feature to carry at the resolution of the spatial
+assay. The reproducible contextual information is therefore specimen-scale, not uniquely receiver-local,
+in these cohorts.
+
+Third, the estimator behaved correctly where it should have failed. On the four-donor PanIN series the
+powered stability filter returned zero stable programs---the correct null at that cohort size---while
+the model still recovered a directionally coherent inflammatory-to-proliferative shift. The
+cross-disease probe therefore calibrated rather than validated: it demonstrated that StageBridge does
+not manufacture patient-robust stability where the data cannot support it.
+
+The scientific shape of the thesis is thus a bounded positive result. Context-associated regulatory
+transport is real, interpretable, and reproducible at the program level; its spatial resolution is
+bounded to the specimen ecological scale by the available measurements; and the method reports that
+boundary rather than obscuring it.
+
+\section{A context-associated component of premalignant progression}
+
+The positive finding is best read through the host-versus-intrinsic framing that motivated the
+design. An epithelial cell does not progress in isolation; it progresses within a tissue whose
+inflammatory and stromal composition is itself changing across the precursor sequence
+\autocite{Kadara2016-dt,Mazzilli2025-hi}. StageBridge operationalizes that intuition by refusing to
+attribute all of a cell's progression-aligned displacement to its own state: the context field can
+only claim the residual displacement that the intrinsic field failed to explain for ecologically
+comparable cells.
+
+\subsection{Restraint and drive are co-activated, and the niche grades the balance}
+
+The preinvasive stable set is initially counterintuitive. p53 rises ($+0.295$) alongside WNT
+($+0.293$), the AP-1 factor FOS ($+0.141$), and directionally-stable EGFR ($+0.308$), while the
+TGF$\beta$ effector SMAD4 falls ($-0.099$). Read as a statement about tumour suppression, coordinated
+gain of p53 and WNT would be contradictory. Two considerations resolve it, and the second is the
+more interesting.
+
+The first is technical. The PROGENy p53 coordinate is a transcriptional \emph{response footprint}: it
+scores the downstream consequence of p53-pathway activation, not p53 function, dosage, or mutational
+status \autocite{Schubert2018-ph}. Genomic studies of the LUAD precursor sequence place the
+drastic molecular changes---copy-number alteration, global hypomethylation---at the later AIS stage
+rather than at its onset, and note that these coincide with the point at which lesional cells become
+exposed to the surrounding microenvironment \autocite{Haga2023-xc}; \emph{TP53} mutation is
+correspondingly a feature of more advanced disease, where mutant cells lose alveolar identity and
+adopt proliferative, high-entropy expression programs \autocite{Zhao2025-vm}. An elevated p53
+footprint at AAH$\rightarrow$AIS is therefore what oncogene-induced stress in a lesion with largely
+intact restraint machinery should look like.
+
+The second consideration is that this configuration has been observed directly, in an independent
+disease, with genetic manipulation available. In mouse models of pancreatic carcinogenesis capturing
+spontaneous p53 loss, oncogenic and tumour-suppressive programs---specifically those controlled by
+p53, CDKN2A, and SMAD4---are \emph{co-activated} within a discrete progenitor-like population at the
+benign-to-malignant transition, engaging senescence-like responses \autocite{Reyes2026-yr}. The
+signature reported here is the same configuration read out as a context residual in a different
+epithelium: restraint and drive elevated together, with SMAD4 the component that gives way. That two
+systems, two species, and two entirely different inference strategies converge on co-activated
+suppression and proliferation at the precursor-to-invasion boundary is stronger support than either
+provides alone, and it argues that the preinvasive lesion is better described as a contested state
+than as a partially transformed one.
+
+The niche-stratum gradient then supplies a direction to that contest. Across the three
+conditional-stratified strata, p53 redirection \emph{declines} from $+0.363$ to $+0.240$ while WNT
+rises ($+0.275 \rightarrow +0.311$) and TRAIL rises ($+0.182 \rightarrow +0.220$) toward the CAF- and
+immune-dense stratum, each significant against a within-donor permutation null. The same axis is
+causal in the pancreatic model: p53 suppression enables progenitor-cell expansion, epithelial--
+mesenchymal reprogramming, and the formation of an immune-privileged niche \autocite{Reyes2026-yr}.
+The observation here is correlative and its magnitude is modest, but its direction is the one that
+system predicts---the inflamed, stroma-rich end of the ecological gradient is where restraint is
+weakest and drive is strongest within the same lesion class.
+
+That heterogeneity within a histologic class is precisely what the estimand was built to expose.
+Molecular archetype analysis of LUAD premalignant lesions, performed without regard to histologic
+designation, resolves lesions into groups that differ in proliferation, immune environment, and
+driver enrichment; the ``proliferation'' archetype is enriched for EGFR driver mutations and a
+pro-tumour immune environment, and tumours closest to it show significantly lower disease-free
+survival, while a ``normal-like'' archetype carries an anti-tumour immune response and no driver
+enrichment \autocite{Anderson2026-zg}. EGFR is the largest directionally-stable context effect at the
+preinvasive edge in this work. The convergence is suggestive rather than confirmatory---archetypes
+are bulk-defined and this analysis is receiver-level---but both point to the same conclusion: AAH and
+AIS are not one biological entity, and the axis on which they differ has an immune-ecological
+component.
+
+\subsection{Interferon tone is lost before invasion, not after it}
+
+The most striking model-independent result is a coordinated reversal. Interferon-$\alpha$ and
+interferon-$\gamma$ responses, oxidative phosphorylation, and MYC targets are all downregulated at
+AAH$\rightarrow$AIS and all upregulated at AIS$\rightarrow$invasive. The context-residual estimand
+agrees at the preinvasive step through two independent coordinates: JAK-STAT is directionally
+downregulated ($-0.246$) and IRF9---a component of the ISGF3 complex that executes canonical type-I
+interferon transcription---is stably downregulated ($-0.129$). Two analytic lenses, one
+whole-transcriptome and one model-based, place interferon suppression at the \emph{preinvasive}
+transition.
+
+This matters because the only human cohort in which premalignant lesions have been molecularly
+profiled \emph{and} followed to a known fate reports the same direction with an outcome attached. In
+longitudinally monitored bronchial premalignant lesions, progressive and persistent lesions of the
+proliferative subtype show decreased interferon signalling and antigen processing/presentation
+relative to regressive lesions, with immunofluorescence confirming depletion of innate and adaptive
+immune cells \autocite{Beane2019-mp}. Those are squamous airway precursors rather than
+adenocarcinoma precursors, so the comparison is across lesion types and must be made carefully. But
+the claim it licenses is specific: loss of interferon tone in a premalignant lesion is associated
+with progression rather than regression, and the present analysis places that loss at the
+preinvasive step of the adenocarcinoma sequence.
+
+Adjacent evidence in LUAD is consistent. Immunosurveillance is suppressed across the early
+adenocarcinoma spectrum, with reduced cytolytic natural-killer signatures and increased regulatory
+T cells already apparent in subsolid nodules and premalignant lesions
+\autocite{Yanagawa2023-vg,Sinjab2021-in}. In the primary cohort analysed here, epithelial--
+proinflammatory niches enriched for IL1B-high macrophages are prevalent in precursor lesions and
+become \emph{less} frequent in established LUAD \autocite{Peng2025-xu}. The pancreatic literature
+describes the same temporal ordering from the opposite direction: lymphoid organization adjacent to
+PanIN is immature relative to PDAC, and immune exclusion and immunosuppression emerge during
+progression rather than being present at the precursor stage \autocite{Lyman2025-qg}, with focal
+immunosuppressive hotspots enriched for regulatory T cells and macrophages appearing around
+higher-grade dysplasia \autocite{Kiemen2026-dz}.
+
+The synthesis is that the immune configuration of a precursor lesion is a stage-specific property
+with a limited window, and the results here locate the transcriptional disengagement from interferon
+surveillance before invasion rather than after it. That has a direct interception implication: in the
+same cohort, targeting inflammation alone or with checkpoint blockade during the precancerous phase
+reduces alveolar progenitor burden \autocite{Peng2025-xu}, and in pancreas, pharmacological
+interception of established precursors confers a greater survival benefit than treatment of
+established tumours \autocite{Than2026-hj}. If the interferon window closes preinvasively, the
+interval in which immune-directed interception is most likely to matter is earlier than the invasive
+transition that current staging emphasises \autocite{Mazzilli2025-hi,Pedro2025-kz}.
+
+The competing explanation must be stated with equal weight. The invasive front carries a different
+cellular composition, with documented stage-associated shifts in regulatory T cells, B-cell subsets,
+and endothelium across the AIS$\rightarrow$MIA$\rightarrow$invasive sequence
+\autocite{Zhu2022-hz}; although receiver states are epithelial-decoded, residual composition effects
+cannot be excluded from a cross-sectional design. A restored interferon signature at invasion is as
+consistent with immune infiltration as with epithelial re-engagement. The preinvasive loss is the
+more defensible half of the observation, and it is the half that carries the interception
+implication.
+
+\subsection{Lineage identity is retained preinvasively and dismantled at invasion}
+
+The enrichment results place loss of differentiated identity at the invasion boundary rather than
+before it. Ciliary and axonemal programs are \emph{up} at AAH$\rightarrow$AIS (axoneme assembly, NES
+$+2.16$; cilium movement, $+2.15$) and collapse at AIS$\rightarrow$invasive, where sensory perception
+of chemical stimulus is the strongest single enrichment on either edge (NES $-2.61$). The regulatory
+readout nominates concordant factors at invasion: the pioneer and endodermal lineage factor FOXA1
+gains context weight ($+0.192$) and the Notch coactivator MAML1 is the largest stable
+transcription-factor effect ($+0.292$)---a lineage-specification program being actively rewritten
+rather than passively lost.
+
+This staging is consistent with functional work on plasticity in lung tumourigenesis. A
+high-plasticity cell state gives rise to both differentiated and progressed cancer states, and its
+ablation in early neoplasias abrogates the benign-to-malignant transition in mouse autochthonous
+lung tumours \autocite{Chan2026-ov}; spatial profiling of human LUAD subtypes similarly resolves
+heterogeneous dedifferentiation states across histologic categories \autocite{Wang2023-hg}, and loss
+of alveolar identity is a defining property of \emph{TP53}-mutant malignant cells
+\autocite{Zhao2025-vm}. The reading supported here is that preinvasive lesions in this cohort expand
+while retaining a differentiated airway-like transcriptional identity, and that the dismantling of
+that identity is concentrated at the invasive step. The regulatory basis used in this work cannot
+resolve alveolar-intermediate or high-plasticity states directly, so this is offered as a
+directional concordance rather than as identification of those populations.
+
+The metabolic half of the reversal has a cross-disease parallel worth noting. Deep visual proteomics
+of pancreatic precursors finds metabolic reprogramming initiating in histologically normal ducts and
+intensifying across PanIN progression, with mitochondrial remodelling becoming prominent in
+high-grade PanIN \emph{before} invasion \autocite{Min2026-lo}. The oxidative-phosphorylation
+suppression observed here at the preinvasive step and its restoration at invasion describes a
+different trajectory in a different tissue, but both analyses place metabolic reorganization among
+the earliest events and before histologic transformation is complete.
+
+\subsection{Reading a context residual is not reading a level}
+
+One result requires an explicit interpretive guard, because the naive reading contradicts
+well-established tumour biology. VEGF is the largest-magnitude stable pathway at the invasion
+boundary and it is redirected \emph{downward} ($-0.318$). Invasion is canonically accompanied by
+angiogenesis, so a negative VEGF term invites the objection that the model has recovered the wrong
+sign.
+
+Two features of the estimand dissolve the apparent conflict. First, $R_{\mathrm{cond}}$ is a
+\emph{residual}, not a level: it reports how the surrounding tissue redirects a receiver's
+progression relative to the trajectory predicted from its own state, and carries no claim about the
+absolute abundance of VEGF signalling at either stage. A pathway can rise across a transition while
+its context-attributable component is negative. Second, the receiver is epithelial, and the PROGENy
+VEGF coordinate scores the transcriptional response to VEGF signalling in the cells being scored.
+Angiogenic VEGF signalling is transduced predominantly by endothelium, so epithelial VEGF-response
+redirection and tissue-level angiogenesis are distinct quantities that need not move together.
+
+Independent evidence places the angiogenic contribution in the compartment the estimand excludes.
+Multiomic profiling of the AAH$\rightarrow$AIS$\rightarrow$MIA sequence in never-smokers finds that
+endothelial and stromal activity, not epithelial state, distinguishes molecular subtypes within
+pathologically identical lesions, and identifies angiogenesis in late-stage AIS as a probable
+contributor to tissue invasion at the MIA stage \autocite{Chen2025-zo}. The co-expression analysis in
+this work agrees: the vascular SM4 module is enriched for regulation of cell migration (padj
+$=0.007$), TGF$\beta$ response, MAPK cascade, and angiogenesis regulation, and the stromal SM6 ECM
+module gains significance specifically at invasion (supramolecular fibre organization, padj $=0.052$;
+leading-edge COL1A1, COL3A1, LTBP2, COL5A2). The tissue-level vascular and matrix-remodelling
+programs are active at invasion in the same data in which the epithelial VEGF context residual is
+negative. The consistent reading is that the invasive niche redirects epithelial regulatory state
+away from a VEGF-response program while the vascular and stromal compartments remodel---a
+compartment-resolved statement that a level-based analysis could not make, and one the estimand's
+construction is specifically designed to express.
+
+The same guard applies to SMAD4. Its context downregulation at the preinvasive step ($-0.099$) is a
+TGF$\beta$-effector response footprint and is not evidence of the \emph{SMAD4} deletion that
+characterizes late pancreatic carcinogenesis, although the convergence with the SMAD4 arm of the
+co-activated suppressive program in pancreatic precursors \autocite{Reyes2026-yr} and with
+TGF$\beta$-dependent tumour--microenvironment signalling at LUAD invasion \autocite{Zhu2022-hz} is
+worth noting given the cross-disease design.
+
+\subsection{The gated communication chains recover the return arm of a known circuit}
+
+The $R_{\mathrm{cond}}$-gated communication analysis narrows roughly $1.3$ million candidate
+sender$\rightarrow$ligand$\rightarrow$receptor$\rightarrow$program chains at the preinvasive edge onto
+two programs, FOS and RB1, with macrophage- and stromal-derived APOE, GRN, PSAP, and A2M routed
+through LRP1 and EGFR. Because the gate is a filter rather than an independent measurement, the
+relevant question is not whether it is selective---it is selective by construction---but whether what
+survives is biologically coherent. Three observations suggest it is.
+
+First, the retained ligands converge on receptors that plausibly bind them: APOE, A2M, and PSAP are
+established LRP1 ligands.\footnote{The best-characterized receptor for GRN is sortilin; LRP1
+engagement is reported but weaker, so this claim is restricted to APOE, A2M, and PSAP.} A gate
+operating on the terminal regulatory program, with no knowledge of receptor pharmacology, recovered a
+ligand set sharing a receptor. Second, the EGFR$\rightarrow$FOS chains reproduce the canonical
+growth-factor to immediate-early-gene axis, in which receptor tyrosine kinase signalling induces AP-1
+components through the MAPK cascade. That the gate recovers textbook wiring is not a discovery, but a
+filter returning noise would not be expected to reconstitute a well-characterized signalling axis and
+a shared-receptor ligand family from a million-candidate pool.
+
+Third, and most substantively, the chains nominate the reciprocal arm of a circuit shown to be
+required for tumour initiation. In mouse lung, KRAS-mutant alveolar type II cells adopt
+regenerative-like states and secrete amphiregulin, activating EGFR signalling in adjacent
+fibroblasts and inducing a fibrotic, injury-like program; reprogrammed fibroblasts then expand and
+reprogram alveolar macrophages, amplifying inflammatory signalling and reinforcing epithelial
+plasticity, and disruption of the amphiregulin--EGFR axis prevents niche formation and abrogates
+tumour initiation \autocite{Cardoso2026-kp}. That circuit describes signal flowing \emph{from}
+epithelium \emph{to} stroma and myeloid cells. The chains recovered here describe the return path:
+macrophage- and stromal-derived ligands signalling back onto epithelial EGFR and LRP1 and terminating
+on a context-driven AP-1 program. EGFR appears on both arms. The gate was given no knowledge of that
+circuit, and the two analyses together close a loop that neither describes completely---epithelial
+initiation of a fibrotic-inflammatory niche, and that niche redirecting the regulatory state of the
+epithelium that built it.
+
+The chains remain nominations. Ligand--receptor inference and the gate read the same expression
+matrix, no interaction is measured directly, and the specific senders identified here (APOE, GRN,
+PSAP, A2M from alveolar and CHIT1$^{+}$ macrophages; LTF, C3, PLA2G2A from mesothelial and
+serous-gland cells) are hypotheses for perturbation in organoid or co-culture systems---the same
+systems in which the forward arm was established \autocite{Cardoso2026-kp}. Their value is that they
+are specific enough to be wrong.
+
+\section{The spatial scale of ecological information is the central inferential result}
+\label{sec:scale}
+
+The most consequential result is the negative one, and it is a contribution rather than a caveat. The
+question of whether the microenvironmental information relevant to progression is resolved at the scale
+of a single cell's neighborhood, or only at the coarser scale of a specimen's overall ecology, is
+rarely posed sharply and almost never answered with a pre-registered falsification test. Here it was
+posed and answered: cell-resolved local context did not outperform specimen-level ecology or a matched
+shuffle. This does not license the conclusion that local biology is unimportant. It licenses a narrower
+and more useful statement---that the available spatial measurements did not provide stable incremental
+information at the receiver-local scale beyond what broad specimen ecology already carried.
+
+The variance decomposition explains why, and in doing so converts the negative into a measurement
+prescription. If $85$ to $96\%$ of the variation in local niche composition is receiver-local and
+stage-invariant, then a cell-resolved context feature is dominated by variation unrelated to
+progression, and no estimator can recover from that feature what the data did not encode in it.
+Detecting a receiver-local effect, if one exists, would require spatial data in which niche composition
+varies with progression stage---higher-resolution assays, more shared donors per edge than the two
+available on the primary edge, or both. This is the sense in which the thesis defines the boundary
+between what indirect observation can currently recover and what must still be measured.
+
+\subsection{Why the receiver-local scale failed, and why that may be biology}
+
+The falsification result---cell-resolved niche context statistically equivalent to a
+stratum-matched shuffle, with $85$ to $96\%$ of variance in local composition features receiver-local
+and stage-invariant---was presented above as a measurement boundary. Two independent lines of
+evidence suggest it may be more than that.
+
+The first is a direct measurement of the relevant length scale. Three-dimensional
+cellular-resolution histology of more than a thousand human pancreatic precancers finds that
+inflammation around individual lesions is highly heterogeneous, with immune hotspots and cold spots
+\emph{interchanging over tens of microns} \autocite{Kiemen2026-dz}. Visium spots are $55\,\mu$m in
+diameter at $100\,\mu$m centres. An imaging modality with no relationship to this analysis therefore
+measures the ecological variation as operating at or below the resolution at which the context
+vector here was constructed. The variance decomposition reported in Chapter~\ref{chap:results} is a
+statistical inference of the same fact from transcriptomic data: most of the ecological variation a
+Visium spot can see is variation the spot cannot resolve.
+
+The second is that the progression-relevant stromal state may not be a per-receiver property at all.
+Spatial mapping of the PanIN-to-PDAC transition in donor organs finds that the epithelial component
+of PanIN lies on a continuum with cancer while the PanIN microenvironment is drastically distinct
+from it, with epithelial and stromal compartments evolving asynchronously---and proposes that the
+absence of stromal reprogramming is what explains why most PanINs never progress
+\autocite{Elhossiny2026-pq}. If the gating variable is whether a specimen's stroma has undergone a
+field-level reprogramming, then it is a property of the tissue and not of any individual receiver's
+neighbourhood, and a receiver-local context feature would be measuring the wrong object however well
+it was resolved. The observation that a cancer-specific fibroblast population defined in that work
+carries the WNT component LEF1 \autocite{Elhossiny2026-pq} is a small point of contact with the
+sustained WNT context effect reported here across both LUAD edges, though the compartments differ and
+no more should be read into it.
+
+These two readings are not exclusive, and the present data cannot separate them. Ecological
+information may be receiver-local but below Visium resolution, in which case higher-resolution assays
+would recover it; or it may be genuinely specimen-scale, in which case the correct estimand is a
+field-level one and additional resolution would not help. The falsification result is compatible with
+both, and distinguishing them---by re-running the identical ladder on single-cell-resolution spatial
+data, where the first hypothesis predicts recovery and the second does not---is the sharpest single
+experiment this thesis defines.
+
+\subsection{The preinvasive field is closer to equilibrium than the invasive field}
+
+A final dynamical observation connects the regulatory results to the clinical asymmetry that
+motivates interception. The Helmholtz decomposition of the fitted field partitions velocity into
+gradient (equilibrium) and rotational (non-equilibrium) components; the rotational fraction is
+$0.48$ on the preinvasive edge and $0.77$ at invasion, and adding context changes it by at most
+$0.011$ on any edge. The invasive transition is the strongly non-gradient one---a directed,
+cycle-like flux rather than relaxation toward a fixed point---while the preinvasive transition
+retains substantially more gradient character.
+
+That difference has a natural reading in a setting where precursor burden is enormous and progression
+is rare. The normal adult pancreas harbours hundreds of PanINs, almost all bearing oncogenic KRAS
+hotspot mutations, the great majority of which never become cancer
+\autocite{Braxton2024-sv,Kiemen2024-xk}; in the airway, carcinoma in situ lesions that are
+microscopically identical are in genuine equipoise, with roughly half progressing and half regressing
+or remaining static \autocite{Teixeira2019-yb}. A transition with a large gradient component behaves
+like movement within a basin, from which return or stasis is available; a strongly rotational field
+describes a flow that does not settle. The preinvasive step in these cohorts looks more like the
+former and the invasive step more like the latter, which is the shape the epidemiology of precursor
+lesions would predict. The convergence with the description of \emph{TP53}-mutant malignant cells as
+occupying high-entropy expression programs \autocite{Zhao2025-vm} is suggestive of a shared
+underlying transition in disorder, though the two quantities are not the same measurement.
+
+This is a property of the learned field rather than an observed dynamical quantity, and the
+near-invariance of the rotational fraction to context locates it in the intrinsic progression field
+rather than in the niche-gated term. It describes the geometry the model inferred from stage-ordered
+snapshots, not a measured energy landscape, and it is offered as an interpretive frame for why
+preinvasive lesions are so often indolent rather than as evidence that they are.
+
+\section{Methodological contribution}
+
+The methodological contribution is threefold and is largely independent of the specific biological
+result. First, the estimand: $R_{\text{cond}}$ is a per-program, conditional, spatially mappable
+contrast that isolates the context-attributable component of regulatory transport within ecologically
+comparable populations, formalized through conditional Monge maps \autocite{Bunne2022-go} rather than
+left as an implicit property of a black-box predictor. Second, the identifiability discipline: the
+coupling used to define transport was selected against a frozen synthetic benchmark with four
+pre-specified acceptance bars, and that benchmark falsified the first candidate design---the strict
+state-neutral coupling passed abstract-latent recovery but failed regulatory-space recovery, which
+motivated the conditional-stratified revision. Reporting a benchmark that changed the method, rather
+than a benchmark constructed to endorse it, is a deliberate stance against confirmation. Third, the
+falsification ladder: rather than presenting a single fitted model, the analysis compared it against
+self-only, specimen-average, shuffled-context, and degenerate single-branch alternatives, so that the
+claim attached to the model is exactly the claim the comparisons support---no more.
+
+Two honest limits of the decomposition were reported rather than hidden. The credibility diagnostic
+$D_{\rho}$ showed that the interpretable structured terms carry velocity of magnitude comparable to the
+neural residuals in the fitted field (mean $0.965$, credible in four of five folds), so the per-program
+attribution is interpreted only to that extent. And an unstructured neural field fit the endpoint
+better than the structured decomposition---the expected and accepted cost of trading raw predictive fit
+for an interpretable, program-resolved field. These are the prices of interpretability, and stating them
+is part of the method's claim to trustworthiness.
+
+\section{Limitations}
+
+Several limitations bound the interpretation. The progression coordinate $\tau$ is normalized
+pathological stage, not clock time; the model captures the direction and magnitude of state change
+aligned with progression, not growth rates or real-time dynamics. The receiver states are
+DestVI-decoded epithelial expression from mixed-cell Visium spots, not dissociated single nuclei, and
+although adequacy gates validated that the decoded states recapitulate study-defined precursor biology,
+they remain inferred quantities. The context residual is a conditional transport contrast, identifiable
+given the coarse niche stratum; it is not an individual causal effect and does not recover historical
+cell lineages. The primary edge carried only two donors contributing epithelium to both stages, and the
+invasion boundary carried none at the AIS$\rightarrow$MIA step, which limits the within-patient contrast
+available to distinguish local from specimen-level context and is the proximate reason the
+receiver-local hypothesis could not be resolved. The intrinsic field is fitted on source--target pairs
+that themselves contain ecological structure, so $R_{\text{cond}}$ is a conservative estimate under the
+fitted decomposition rather than a formal lower bound on the true ecological effect. Finally, the
+co-expression and communication analyses read the same expression matrix as the estimand, so their
+agreement with $R_{\text{cond}}$ is internal cross-method consistency, not independent validation, and
+the communication chains are mechanistic nominations for experimental follow-up rather than established
+interactions.
+
+\section{Future directions}
+
+The results point to specific next experiments rather than open-ended extensions. The most direct is a
+retrained-shuffle null: retraining the full pipeline on stratum-permuted context and recounting stable
+programs would establish whether the twenty-nine stable programs exceed a shuffled-context baseline at
+the estimand level, complementing the endpoint-level shuffle already reported. Resolving the spatial
+scale of ecological information---the boundary this thesis defined but could not cross---requires
+spatial data in which niche composition varies with stage: single-cell-resolution spatial assays, or
+cohorts with more shared donors per progression edge. The communication framework generated concrete,
+testable hypotheses (macrophage- and stromal-derived APOE, GRN, and DCN signaling routed through LRP1
+and EGFR onto the context-driven FOS and RB1 programs) that are candidates for perturbation in organoid
+or co-culture models. And the identifiability framework itself is edge- and disease-agnostic; applying
+it to other premalignant sequences with adequate shared-donor support would test whether the
+specimen-scale character of ecological information is specific to these lung and pancreatic cohorts or a
+general feature of premalignant progression at current spatial resolution.
+
+\section{Conclusion}
+
+StageBridge reconstructed progression-associated regulatory transport across held-out patients in the
+premalignant lung and identified a reproducible, interpretable subset of regulatory programs associated
+with tissue context beyond epithelial receiver state. It then subjected that finding to a pre-registered
+falsification and reported the result honestly: receiver-local context did not consistently outperform
+specimen-level ecology or matched shuffled controls, and the ecological variation that would carry a
+local effect is overwhelmingly specimen-scale and stage-invariant at the resolution of the available
+data. The pancreatic series confirmed that the estimator calibrates to the correct null when a cohort
+cannot support patient-robust stability. The work supports a context-associated component of
+premalignant epithelial progression while defining the unresolved spatial scale of that
+association---delivering not an unqualified positive claim, but a prespecified estimand with a
+characterized recovery boundary, which is the more durable contribution.
+
+% ============================================================================
+% CITATION PLACEHOLDERS TO RESOLVE (swap for \autocite{} via Zotero):
+%   \autocite{Peng2025-xu}      -- Peng et al., lung precursor proinflammatory-niche study
+%   \autocite{Kadara2016-dt}    -- Kadara et al., LUAD field-cancerization / precursor biology
+%   \autocite{Bunne2022-go}     -- Bunne et al., conditional optimal transport (NeurIPS 2022)
+%   (Manupriya) -- Manupriya et al., conditional OT (AISTATS 2024)
+%   [cite]      -- inflammatory-stromal remodeling in lung precursors (support sentence, sec 4.2)
+% VERIFY BEFORE SUBMISSION: every number here also appears in Chapter 3 (Results)
+%   and traces to results_hpc/**; if any Results number changes, update here.
+% ============================================================================

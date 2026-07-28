@@ -1,0 +1,186 @@
+% !TeX root = ./00-main.tex
+% ============================================================================
+% Chapter 1 -- Introduction
+% DRAFT scaffold (2026-07-28) for AJ to edit into final voice.
+% - This is the citation-heavy chapter. Every (placeholder) marks a claim that
+%   needs a real reference; resolve via Zotero -> \autocite{}. A consolidated
+%   list of what each placeholder needs is in the comment block at the file end.
+% - V1 (prior StageBridge formulation) motivation lives in section 1.7, framed as
+%   method development, NOT as a result. No unverified V1 numbers are stated.
+% - No template machinery touched.
+% ============================================================================
+
+\chapter{Introduction} \label{chap:intro}
+
+\section{Premalignancy is a tissue-level process}
+\label{sec:intro-tissue}
+
+Cancer does not begin at the moment of invasion. It is preceded by a sequence of premalignant
+lesions in which epithelial cells acquire progression-associated regulatory and genomic changes while
+still confined to their tissue of origin (premalignancy-review). In the lung, this sequence runs from
+histologically normal epithelium through atypical adenomatous hyperplasia (AAH) and adenocarcinoma in
+situ (AIS) to minimally invasive and frankly invasive adenocarcinoma (LUAD) (luad-precursor-path).
+These lesions are not merely smaller tumors; they are qualitatively distinct tissue states, and the
+central clinical problem they pose is that only a fraction progress, while current histology cannot
+reliably distinguish those that will (precursor-risk). A mechanistic account of what pushes a
+premalignant epithelial cell toward invasion---and what can be read from a single biopsy---would
+change how these lesions are managed.
+
+A recurring theme in modern cancer biology is that this push is not cell-intrinsic alone. Progression
+is shaped by the tissue ecosystem the epithelial cell inhabits: the inflammatory, stromal, and
+vascular compartments that surround it and remodel across the precursor sequence (tme-review). This
+motivates a host-versus-intrinsic framing that runs throughout this dissertation---an epithelial cell's
+fate reflects both its own regulatory state and the physiologic state of the tissue around it, and
+separating these two contributions is a prerequisite for understanding, and eventually predicting,
+progression.
+
+\section{Lung and pancreatic precursor systems}
+\label{sec:intro-systems}
+
+Two premalignant systems anchor this work. The primary system is the lung adenocarcinoma precursor
+sequence, for which matched single-nucleus, spatial, and exome profiling of AAH, AIS, and invasive
+lesions is now available (peng-luad; kadara-field). This cohort is unusually well suited to the
+question because it spans an ordered, histologically defined progression series with paired molecular
+and spatial data on the same specimens. Prior work in this system has implicated proinflammatory niches
+and progenitor-like epithelial states in early progression (peng-luad), providing biological anchors
+against which model-derived findings can be checked.
+
+The secondary system is the pancreatic intraepithelial neoplasia (PanIN) sequence, a graded
+low-to-high-grade precursor series in pancreatic ductal adenocarcinoma (panin-review). PanIN serves
+here as a cross-disease transferability and calibration probe rather than a second discovery cohort:
+it tests whether a method developed on lung precursors behaves sensibly when applied to a different
+tissue with a much smaller number of profiled donors.
+
+\section{Single-cell and spatial profiling of premalignant tissue}
+\label{sec:intro-profiling}
+
+Single-cell and single-nucleus RNA sequencing resolve the epithelial and microenvironmental cell
+states present in premalignant tissue but discard spatial organization in the process of dissociation
+(scrnaseq-review). Spatial transcriptomics, and in particular spot-based platforms such as 10x Visium,
+restore tissue coordinates but at a resolution coarser than a single cell, so that each measured spot
+mixes several cells (visium). Neither modality alone provides what a study of niche effects requires:
+epithelial regulatory state, the composition of the surrounding niche, and the spatial relationship
+between them. Integrating them---deconvolving spatial spots against a single-cell reference to recover
+cell-type composition and decoded expression---is therefore a necessary preprocessing step
+(destvi; deconvolution-review), and one whose adequacy must be checked rather than assumed.
+
+A further difficulty is intrinsic to the data rather than the assay. Premalignant cohorts are
+cross-sectional: each specimen is a snapshot of one stage, not a time course of one cell. Any account
+of progression from such data is therefore an inference about the direction of state change aligned
+with pathological stage, not an observation of a trajectory, and the analysis must be explicit about
+that distinction (pseudotime-caveats).
+
+\section{Optimal transport and neural differential equations for cell-state dynamics}
+\label{sec:intro-ot}
+
+Recovering direction-of-change from unpaired cross-sectional populations is the problem optimal
+transport (OT) was built for: given cells at a source stage and cells at a target stage, OT constructs
+the most economical coupling between them and thereby a map of how the population moves (ot-singlecell).
+Entropic-regularized OT makes this computationally tractable at cohort scale through the Sinkhorn
+iteration (cuturi-sinkhorn), and conditional formulations of OT allow the coupling to be constrained
+to comparable subpopulations rather than matching arbitrary cells (bunne-cot; manupriya-cot). In
+parallel, neural ordinary differential equations and flow-matching methods learn continuous velocity
+fields that transport one distribution into another (neural-ode; flow-matching), and optimal-transport
+conditional flow matching combines the two, learning a field whose trajectories respect an OT coupling
+\autocite{Lipman2022-ns}. These tools make it possible to model progression as a learned dynamical flow through a
+molecular state space rather than as a static comparison of stages.
+
+\section{Spatially resolved and niche-aware methods}
+\label{sec:intro-spatial}
+
+A growing family of methods incorporates spatial context into single-cell analysis: neighborhood-based
+representations that summarize each cell's surroundings \autocite{Singhal2024-rv}, niche and cellular-community detection
+(niche-methods), and cell--cell communication inference from ligand--receptor co-expression
+(liana; cellcell-review). These methods characterize where cell states co-occur and which signaling
+channels are available, but they generally describe association rather than isolate a
+context-attributable component of a dynamical process, and they rarely test whether the spatial
+information they use is resolved at the scale they assume. The gap this dissertation addresses lies
+precisely there---between describing spatial context and quantifying its specific, scale-resolved
+contribution to progression.
+
+\section{Structured and universal differential equations}
+\label{sec:intro-ude}
+
+Purely neural dynamical models are flexible but opaque: a black-box velocity field can reconstruct a
+transition without exposing which biological programs drive it. Universal differential equations (UDEs)
+address this by combining mechanistic, interpretable structure with neural residual terms, so that a
+model can be both expressive and readable (ude-rackauckas). For a study whose goal is to attribute
+progression to specific regulatory programs, this structure is essential: the interpretable terms carry
+the biological claim, and the residuals absorb what the structure cannot express, with a diagnostic to
+report how much of each is doing the work. Casting regulatory state in terms of curated pathway and
+transcription-factor activities (progeny; collectri; decoupler) gives the structured terms a biological
+vocabulary, so that a fitted field can be read as a statement about named programs rather than abstract
+latent dimensions.
+
+\section{The unresolved estimand, and the motivation from a prior formulation}
+\label{sec:intro-estimand}
+
+Bringing these threads together exposes the estimand that this dissertation targets and that prior
+approaches leave implicit. An initial formulation of the StageBridge approach established that
+premalignant progression is learnable: a niche-conditioned transition model, in which each epithelial
+receiver's atlas-derived state and a receiver-centered set encoding of its spatial neighborhood were
+combined and transported between adjacent stages by optimal-transport conditional flow matching,
+reconstructed progression-associated transitions, and reduced variants that removed the niche or the
+gating that mixed state and context reconstructed them less well---evidence that context carried useful
+predictive information. That formulation, however, combined epithelial state and niche context within a
+single gated predictor and operated in a broad latent state space. It therefore could not answer the
+question that actually matters biologically: what portion of the prediction is specifically attributable
+to context rather than to the cell's own state, and whether the useful context is resolved at the scale
+of the individual cell's neighborhood or only at the coarser scale of the specimen. Predictive accuracy
+and causal-style attribution are different targets, and a model optimized for the former does not
+deliver the latter.
+
+The unresolved quantity is therefore a \emph{conditional context residual}: the additional
+progression-aligned regulatory displacement of an epithelial cell that is attributable to its local
+tissue context, after accounting for the displacement already predicted by its intrinsic state, and
+estimated only among ecologically comparable cells so that the comparison is not confounded by state.
+Defining this quantity, establishing when it can be identified from cross-sectional spatial data, and
+measuring it in real premalignant cohorts is the problem this dissertation sets out to solve.
+
+\section{Objective and hypotheses}
+\label{sec:intro-objective}
+
+The objective of this dissertation is to define, validate, and apply a conditional context-residual
+estimand for premalignant epithelial progression---to determine whether local tissue context alters
+epithelial regulatory transport beyond intrinsic state, through which regulatory programs, and at what
+spatial scale. The methodological realization of this objective is StageBridge, a structured universal
+differential equation that decomposes progression velocity into an intrinsic field and a niche-gated
+context field, with the context residual $R_{\text{cond}}$ as its primary estimand; its full
+specification is given in Chapter~\ref{chap:methods}. Where the prior formulation combined state and
+context in a single predictor, this decomposition makes their separation explicit; and the validation
+here is adversarial rather than confirmatory: the transport coupling that defines the estimand is
+selected against a synthetic benchmark with known ground truth, and an initial state-neutral coupling
+that failed that benchmark was discarded before any real data were analyzed.
+
+Three pre-specified, falsifiable hypotheses organize the analysis, stated formally in
+Chapter~\ref{chap:methods} (Section~\ref{sec:hypotheses}) and tested in Chapter~\ref{chap:results}. The
+\emph{central hypothesis} is that local cell-state context explains a reproducible component of
+regulatory transport beyond intrinsic state---that a non-zero, patient-robust context residual exists
+for some regulatory programs. The \emph{local-context hypothesis} asks the stronger question of whether
+that contextual information is genuinely receiver-local, outperforming a coarser specimen-level ecology
+and a matched shuffle. The \emph{cross-disease hypothesis} asks
+whether the estimator behaves correctly under transfer to a much smaller pancreatic precursor
+cohort---returning patient-robust programs only where the data support them, and a calibrated null
+otherwise---rather than requiring that specific lung programs recur.
+
+Chapter~\ref{chap:methods} develops the model, estimand, coupling, and identifiability benchmark;
+Chapter~\ref{chap:results} tests the three hypotheses; and Chapter~\ref{chap:discussion} interprets
+them and their limits. The intended contribution is neither an unqualified positive effect nor a bare
+negative, but a prespecified context-residual estimand together with a characterized recovery
+boundary---a statement of what local tissue context contributes to premalignant progression, through
+which programs, and at the spatial scale the available data can and cannot resolve.
+
+% ============================================================================
+% CITATION PLACEHOLDERS TO RESOLVE (swap for \autocite{}; grouped by section):
+% 1.1: (premalignancy-review) (luad-precursor-path) (precursor-risk) (tme-review)
+% 1.2: (peng-luad) (kadara-field) (panin-review)
+% 1.3: (scrnaseq-review) (visium) (destvi) (deconvolution-review) (pseudotime-caveats)
+% 1.4: (ot-singlecell) (cuturi-sinkhorn) (bunne-cot) (manupriya-cot) (neural-ode)
+%      (flow-matching) \autocite{Lipman2022-ns}
+% 1.5: \autocite{Singhal2024-rv} (niche-methods) (liana) (cellcell-review)
+% 1.6: (ude-rackauckas) (progeny) (collectri) (decoupler)
+% 1.7: prior StageBridge formulation = AJ's own earlier work -> cite as prior work /
+%      self-citation or "previously described" per committee preference; NO invented numbers.
+% NOTE: the stub's placeholder \cite{dirac}/\Blindtext were removed. All refs above
+%       are text placeholders, not real keys.
+% ============================================================================

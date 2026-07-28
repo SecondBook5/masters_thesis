@@ -1,0 +1,141 @@
+\chapter{Derivation of the StageBridge Training Objective and Estimand} \label{chap:appendix-b}
+
+%% Appendix B: derivation of the model. (1) flow matching -> why L_CFM recovers the OT displacement
+%% field; (2) the structured UDE decomposition + why the three-stage schedule identifies self vs
+%% context; (3) why the self-vs-full endpoint difference is the within-receiver context estimand R_cond;
+%% (4) the full objective. Matches crrt/ude/train.py (CFM + 0.25 endpoint + 0.01 residual + 1e-4 sparse
+%% + anchor) and crrt/ude/estimand.py. VOICE: numbered equations, every symbol defined, plain-word claim.
+
+This appendix derives the StageBridge training objective and shows why the context residual
+$R_{\mathrm{cond}}$ of Chapter~\ref{chap:methods} (Equation~\ref{eq:rcond}) is a valid within-receiver
+measure of the effect of local context on progression. The argument has three parts: flow matching
+against an optimal-transport coupling recovers the displacement field between the source and target
+regulatory distributions; the three-stage schedule identifies the self and context components of that
+field; and the difference between the full and self endpoints, integrated from a shared initial state,
+isolates the context contribution.
+
+\section{Flow matching against a transport coupling}
+
+Let $\mu_0$ and $\mu_1$ be the source-stage and target-stage distributions of regulatory states, and let
+$\Pi^{\star}$ be the entropic optimal-transport coupling between samples of them
+(Appendix~\ref{chap:appendix-a}). For a coupled pair $(z_i, z_j) \sim \Pi^{\star}$, define the linear
+interpolant and its constant velocity,
+\begin{equation}\label{eq:app-interp}
+z_\tau \;=\; (1-\tau)\, z_i + \tau\, z_j ,
+\qquad
+\frac{d}{d\tau} z_\tau \;=\; z_j - z_i \;\equiv\; u_{ij} ,
+\end{equation}
+where $z_\tau$ is the state at pseudo-time $\tau \in [0,1]$ along the straight path from $z_i$ to $z_j$
+and $u_{ij}$ is the displacement velocity of that path. Conditional flow matching \autocite{Lipman2022-ns} trains a
+velocity field $v(z, w, \tau)$ to regress onto this conditional velocity,
+\begin{equation}\label{eq:app-cfm}
+\mathcal{L}_{\mathrm{CFM}} \;=\;
+\mathbb{E}_{(i,j)\sim\Pi^{\star},\ \tau\sim U[0,1]}
+\left\lVert\, v\!\left(z_\tau, w_i, \tau\right) - u_{ij} \,\right\rVert_2^2 ,
+\end{equation}
+where the expectation is over coupled pairs and over pseudo-time. The minimizer of
+Equation~\ref{eq:app-cfm} at a point $(z, \tau)$ is the conditional mean of the displacement velocity
+over all coupled pairs whose interpolant passes through that point,
+\begin{equation}\label{eq:app-marginal}
+v^{\star}(z, \tau) \;=\; \mathbb{E}_{(i,j)\sim\Pi^{\star}}\!\left[\, u_{ij} \ \middle|\ z_\tau = z \,\right] ,
+\end{equation}
+which is the marginal velocity field whose flow transports $\mu_0$ to $\mu_1$ along the transport plan
+$\Pi^{\star}$. In words: regressing the field onto straight-line displacements of transport-matched pairs
+recovers the average velocity that carries the source distribution onto the target distribution, so the
+learned $v$ integrates source cells to the target-stage regulatory distribution. Because $\Pi^{\star}$
+is computed only from regulatory-state distance within a coarse niche stratum
+(Equation~\ref{eq:coupling}), the supervision carries no fine-context information, and the context
+dependence of $v$ is learned rather than imposed by the pairing.
+
+\section{The structured decomposition and its estimation}
+
+StageBridge does not fit an unstructured $v$. It writes the field as a receiver-intrinsic term plus a
+context term,
+\begin{equation}\label{eq:app-decomp}
+v(z, w, \tau) \;=\; \underbrace{v_{\mathrm{self}}(z, \tau)}_{\text{no }w}
+\;+\; \underbrace{v_{\mathrm{context}}(z, w, \tau)}_{\text{vanishes when context is inert}} ,
+\end{equation}
+with $v_{\mathrm{self}}$ and $v_{\mathrm{context}}$ as defined in
+Equations~\ref{eq:vself}--\ref{eq:vcontext}. This decomposition is identifiable only if the two terms
+are estimated so that $v_{\mathrm{self}}$ captures the progression that occurs independent of context
+and $v_{\mathrm{context}}$ captures only the residual that context adds. A single joint fit does not
+guarantee this: the flexible context term could absorb intrinsic progression, or the self term could
+absorb context-driven variation, and the split would be arbitrary. The three-stage schedule resolves
+this.
+
+\emph{Stage A} fits $v_{\mathrm{self}}$ alone against the coupling velocity, minimizing
+Equation~\ref{eq:app-cfm} in self mode (the field evaluated with $v_{\mathrm{context}} \equiv 0$). Its
+minimizer is the best context-free explanation of the transport,
+\begin{equation}\label{eq:app-stageA}
+v_{\mathrm{self}}^{A} \;=\; \argmin_{v_{\mathrm{self}}}\ \mathbb{E}
+\left\lVert\, v_{\mathrm{self}}(z_\tau, \tau) - u_{ij} \,\right\rVert_2^2 .
+\end{equation}
+\emph{Stage B} freezes $v_{\mathrm{self}} = v_{\mathrm{self}}^{A}$ and fits the context term to the
+part of the displacement the frozen self field does not explain,
+\begin{equation}\label{eq:app-stageB}
+v_{\mathrm{context}}^{B} \;=\; \argmin_{v_{\mathrm{context}}}\ \mathbb{E}
+\left\lVert\, v_{\mathrm{context}}(z_\tau, w_i, \tau) - \bigl(u_{ij} - v_{\mathrm{self}}^{A}(z_\tau, \tau)\bigr) \,\right\rVert_2^2 ,
+\end{equation}
+so the context term regresses onto the \emph{residual} velocity $u_{ij} - v_{\mathrm{self}}^{A}$ by
+construction. This is what ties $v_{\mathrm{context}}$ to what is left over after intrinsic progression,
+which is the operational meaning of ``context residual.'' \emph{Stage C} refines both terms jointly at
+a reduced learning rate under an anchor penalty that keeps the self field close to its Stage-A value,
+\begin{equation}\label{eq:app-anchor}
+\mathcal{L}_{\mathrm{anchor}} \;=\; \lambda_a\, \frac{1}{P}\sum_{k=1}^{P}
+\bigl\lVert \theta_{s,k} - \theta_{s,k}^{A} \bigr\rVert_2^2 ,
+\end{equation}
+where $\theta_{s,k}$ is the $k$-th self-field parameter, $\theta_{s,k}^{A}$ its Stage-A value, $P$ the
+total self-field parameter count, and $\lambda_a$ the anchor weight. Normalizing by $P$ makes
+$\lambda_a$ independent of model size. The anchor lets the joint step correct small mismatches at the
+interface of the two terms while preventing Stage C from silently relearning the self field as context,
+so the identification established in Stages A and B is preserved.
+
+\section{The context residual as a within-receiver contrast}
+
+The trained field defines, for a receiver with initial state $z_0$ and context $w$, two endpoints
+obtained by integrating from the \emph{same} $z_0$,
+\begin{align}
+z_{\mathrm{full}}(1) \;&=\; z_0 + \int_0^1 \bigl[\, v_{\mathrm{self}}(z(\tau), \tau) + v_{\mathrm{context}}(z(\tau), w, \tau) \,\bigr]\, d\tau , \label{eq:app-full}\\
+z_{\mathrm{self}}(1) \;&=\; z_0 + \int_0^1 v_{\mathrm{self}}(z(\tau), \tau)\, d\tau , \label{eq:app-selfend}
+\end{align}
+where the full trajectory includes the context modulation and the self trajectory omits it, and both
+share the identical self parameters. The context residual is their difference under the semantic
+projection $\phi$,
+\begin{equation}\label{eq:app-rcond}
+R_{\mathrm{cond}}(z_0, w) \;=\; \phi\!\left[z_{\mathrm{full}}(1)\right] - \phi\!\left[z_{\mathrm{self}}(1)\right]
+\;\xrightarrow{\ \phi=\mathrm{id}\ }\;
+z_{\mathrm{full}}(1) - z_{\mathrm{self}}(1) .
+\end{equation}
+Because the two integrals in Equations~\ref{eq:app-full}--\ref{eq:app-selfend} differ only by the
+presence of $v_{\mathrm{context}}$ and are driven from a common $z_0$ with shared self parameters,
+$R_{\mathrm{cond}}$ is a \emph{within-receiver} contrast: it holds the receiver's own state and intrinsic
+dynamics fixed and reports only the displacement attributable to its context. It is not a comparison
+between two separately fit models, which is the property that makes it interpretable as the effect of
+context rather than an artifact of two independent fits. When context is inert
+($v_{\mathrm{context}} \to 0$) the two trajectories coincide and $R_{\mathrm{cond}} \to 0$; coordinate
+$d$ of $R_{\mathrm{cond}}$ is the context effect on regulatory program $d$. Fixing the context at the
+observed source niche $w(\tau) = w_i$ throughout both integrals makes $R_{\mathrm{cond}}$ the effect of
+the receiver's \emph{observed} ecology, consistent with the integrator, which evaluates a single fixed
+context at every sub-step.
+
+\section{The full training objective}
+
+The complete per-step objective adds three regularizers to the flow-matching term. The endpoint term
+matches the integrated source population to the target population in transport distance, the residual
+term keeps the context velocity small so context acts as a correction rather than a driver, and the
+sparsity term encourages sparse context effects,
+\begin{equation}\label{eq:app-objective}
+\mathcal{L} \;=\; \mathcal{L}_{\mathrm{CFM}}
+\;+\; \lambda_{e}\, d_{\mathrm{Sinkhorn}}\!\bigl(z_{\mathrm{int}}(1),\, \mu_1\bigr)
+\;+\; \lambda_{r}\, \mathbb{E}\lVert v_{\mathrm{context}} \rVert_2^2
+\;+\; \lambda_{s}\, \lVert \Theta_{c} \rVert_1
+\;+\; \mathbf{1}[\text{Stage C}]\,\mathcal{L}_{\mathrm{anchor}} ,
+\end{equation}
+where $z_{\mathrm{int}}(1)$ is the integrated endpoint of the source batch, $d_{\mathrm{Sinkhorn}}$ is
+the entropic transport distance of Appendix~\ref{chap:appendix-a}, $\mu_1$ is the target-stage
+population, $\Theta_{c}$ are the context-field parameters, $\mathbf{1}[\cdot]$ is the indicator that the
+anchor is active only in Stage C, and $(\lambda_e, \lambda_r, \lambda_s) = (0.25,\, 0.01,\, 10^{-4})$
+are the fixed loss weights. The flow-matching term supplies the primary supervision of the velocity
+field; the endpoint term corrects accumulated integration error at $\tau=1$; and the residual and
+sparsity terms enforce that the context contribution is a small, sparse residual on top of the intrinsic
+progression, matching the interpretation of $R_{\mathrm{cond}}$ as a residual effect.

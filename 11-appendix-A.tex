@@ -1,0 +1,101 @@
+%%%% necessary customization for the appendix and headers
+\appendix 
+\makeatletter
+\addtocontents{toc}{\protect\renewcommand\protect\cftchappresnum{\@chapapp\ }}
+\makeatother
+\renewcommand{\thechapter}{\Alph{chapter}}
+
+\chapter{Entropic Optimal Transport and the Sinkhorn Iteration} \label{chap:appendix-a}
+
+%% Appendix A: the entropic-OT coupling + log-domain Sinkhorn used by StageBridge (Chapter 3, Eq. 3.9)
+%% and as the endpoint/ladder distance. Matches crrt/ude/_ot.py: log-domain, float64, final rescaling.
+%% VOICE: define every symbol; numbered equations; plain-word statement alongside the algebra.
+
+StageBridge uses entropic optimal transport in two places: to build the source--target coupling
+$\Pi^{(k)}$ that supervises training (Chapter~\ref{chap:methods}, Equation~\ref{eq:coupling}), and as the
+Sinkhorn distance that measures endpoint accuracy in the falsification ladder
+(Section~\ref{sec:ladder}). This appendix defines the entropic transport problem and the log-domain
+Sinkhorn iteration used to solve it, matching the implementation.
+
+\section{The entropic transport problem}
+
+Given a source point set $\{z_i\}_{i=1}^{N}$ and a target point set $\{z_j\}_{j=1}^{M}$ in the
+regulatory state space $\mathbb{R}^{d_z}$, define the cost matrix $C \in \mathbb{R}^{N \times M}$ by the
+squared Euclidean distance,
+\begin{equation}\label{eq:app-cost}
+C_{ij} \;=\; \lVert z_i - z_j \rVert_2^2 ,
+\end{equation}
+where $C_{ij}$ is the cost of transporting a unit of mass from source $i$ to target $j$. The discrete
+Kantorovich transport problem seeks a coupling $\Pi \in \mathbb{R}_{\geq 0}^{N \times M}$ that moves the
+source distribution onto the target distribution at minimum total cost. With uniform marginals
+$a = \tfrac{1}{N}\mathbf{1}_N$ and $b = \tfrac{1}{M}\mathbf{1}_M$, the admissible couplings are
+\begin{equation}\label{eq:app-polytope}
+\mathcal{U}(a, b) \;=\; \bigl\{\, \Pi \in \mathbb{R}_{\geq 0}^{N \times M} \;:\;
+\Pi \mathbf{1}_M = a,\ \ \Pi^{\top} \mathbf{1}_N = b \,\bigr\},
+\end{equation}
+where $\mathbf{1}_N$ is the all-ones vector of length $N$, the row-sum constraint $\Pi \mathbf{1}_M = a$
+fixes how much mass leaves each source point, and the column-sum constraint $\Pi^{\top}\mathbf{1}_N = b$
+fixes how much arrives at each target point. The entropic problem adds a negative-entropy regularizer,
+\begin{equation}\label{eq:app-entropic}
+\Pi^{\star} \;=\; \argmin_{\Pi \in \mathcal{U}(a,b)}\ \sum_{i,j} \Pi_{ij}\, C_{ij}
+\;-\; \epsilon\, H(\Pi),
+\qquad
+H(\Pi) \;=\; -\sum_{i,j} \Pi_{ij}\bigl(\log \Pi_{ij} - 1\bigr),
+\end{equation}
+where $H(\Pi)$ is the entropy of the coupling and $\epsilon > 0$ is the regularization weight
+($\epsilon = 0.05$ throughout). The entropy term makes the objective strictly convex and the solution
+unique and differentiable, which is what allows the coupling to be used inside a gradient-based training
+loop; larger $\epsilon$ yields a smoother, more diffuse coupling, and $\epsilon \to 0$ recovers the
+unregularized transport plan.
+
+\section{The Sinkhorn fixed point}
+
+The unique minimizer of Equation~\ref{eq:app-entropic} has the factored form
+\begin{equation}\label{eq:app-factored}
+\Pi^{\star}_{ij} \;=\; u_i\, K_{ij}\, v_j ,
+\qquad
+K_{ij} \;=\; \exp\!\left(-\,C_{ij} / \epsilon\right),
+\end{equation}
+where $K \in \mathbb{R}_{\geq 0}^{N \times M}$ is the Gibbs kernel of the cost and $u \in
+\mathbb{R}_{\geq 0}^{N}$, $v \in \mathbb{R}_{\geq 0}^{M}$ are nonnegative scaling vectors. Imposing the
+two marginal constraints of Equation~\ref{eq:app-polytope} on the factored form yields the Sinkhorn
+fixed-point equations, whose alternating solution is the Sinkhorn iteration: repeatedly rescale $u$ so
+the rows match $a$, then $v$ so the columns match $b$.
+
+\section{Log-domain implementation}
+
+Evaluating Equation~\ref{eq:app-factored} directly is numerically unstable because $K_{ij} =
+\exp(-C_{ij}/\epsilon)$ underflows for the small $\epsilon$ used here. The implementation therefore
+carries out the iteration entirely in the log domain, in double precision. Writing $\log K_{ij} =
+-C_{ij}/\epsilon$ and log-scalings $\log u \in \mathbb{R}^{N}$, $\log v \in \mathbb{R}^{M}$, the updates
+are
+\begin{align}
+\log u \;&\leftarrow\; \log a \;-\; \operatorname{logsumexp}_{j}\bigl(\log K_{ij} + \log v_j\bigr), \label{eq:app-logu}\\
+\log v \;&\leftarrow\; \log b \;-\; \operatorname{logsumexp}_{i}\bigl(\log K_{ij} + \log u_i\bigr), \label{eq:app-logv}
+\end{align}
+where $\operatorname{logsumexp}(x) = \log \sum_k \exp(x_k)$ is evaluated by the standard max-shifted
+form so no intermediate exponential overflows. Equations~\ref{eq:app-logu}--\ref{eq:app-logv} are
+iterated for a fixed $80$ iterations; the coupling is then recovered as
+\begin{equation}\label{eq:app-recover}
+\log \Pi_{ij} \;=\; \log u_i \;+\; \log K_{ij} \;+\; \log v_j ,
+\qquad
+\Pi_{ij} \;=\; \exp\!\left(\log \Pi_{ij}\right),
+\end{equation}
+followed by a short sequence of alternating row/column rescalings of $\Pi$ that drives the marginals to
+$a$ and $b$ to numerical tolerance. The entire computation is performed in double precision: single
+precision was found to accumulate error across the thousands of in-loop gradient steps of training and
+to drive the field parameters to non-finite values, whereas double precision is stable, and the
+increased precision is worth the modest cost.
+
+\section{Use as a distance}
+
+The same routine supplies the endpoint distance of the falsification ladder. For a predicted endpoint
+set $\{\hat z_i\}$ and a real target-stage set $\{z_j\}$, the Sinkhorn distance is the transport cost of
+the optimal entropic coupling,
+\begin{equation}\label{eq:app-distance}
+d_{\mathrm{Sinkhorn}}\bigl(\{\hat z_i\}, \{z_j\}\bigr) \;=\; \sum_{i,j} \Pi^{\star}_{ij}\, \lVert \hat z_i - z_j \rVert_2^2 ,
+\end{equation}
+where $\Pi^{\star}$ is the coupling of Equation~\ref{eq:app-recover} computed between the two sets.
+Equation~\ref{eq:app-distance} compares whole distributions of receivers rather than paired points,
+which is the appropriate comparison when the prediction and the target are unpaired populations of
+held-out cells.

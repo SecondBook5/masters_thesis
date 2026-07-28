@@ -1,0 +1,66 @@
+\chap{Abstract} 
+
+
+%%%% your abstract goes here (word limit: 350)
+% DRAFT (2026-07-28) -- edit to final voice; ~330 words, under the 350 limit.
+% Numbers trace to Chapter 3 / results_hpc. No citations in abstract (per convention).
+Premalignant epithelial lesions progress within tissue ecosystems whose inflammatory and stromal
+composition changes across the precursor sequence, yet whether the local microenvironment alters an
+epithelial cell's progression-aligned regulatory state beyond its own intrinsic state---and at what
+spatial scale---has been difficult to isolate, because cross-sectional profiling captures snapshots
+rather than trajectories and confounds cell state with tissue context. This dissertation develops
+StageBridge, a biologically structured universal differential equation that separates an intrinsic
+regulatory-progression field from a niche-gated context field and defines a per-program, conditional
+context residual, $R_{\text{cond}}$, as the additional regulatory displacement attributable to local
+ecology within ecologically comparable cells. The transport coupling underlying the estimand was
+selected against a frozen synthetic identifiability benchmark, which falsified an initial
+state-neutral coupling and motivated the conditional-stratified formulation used throughout. Applied to a patient-held-out
+lung adenocarcinoma precursor cohort spanning atypical adenomatous hyperplasia, adenocarcinoma in
+situ, and invasive disease, StageBridge recovered a small, reproducible set of context-associated
+regulatory programs---twenty-nine on the preinvasive AAH-to-AIS edge and twenty-eight at the
+AIS-to-invasive boundary---forming a coordinated WNT, p53, TRAIL, and AP-1 axis with coupled interferon
+and TGF$\beta$-effector suppression, sign-consistent across all folds and donors and concordant with
+co-expression analysis. A pre-registered falsification ladder then showed that this
+contextual information did not resolve at the single-cell-neighborhood scale: cell-resolved niche did
+not outperform specimen-level ecology or a matched shuffle. A variance decomposition supplied the
+reason---niche-composition variance, though overwhelmingly cell-local, is stage-invariant at the
+available resolution, so the progression-aligned signal it carries resides at the coarser specimen
+scale rather than at the individual receiver's neighborhood. A pancreatic precursor series returned a correctly calibrated null,
+confirming that the estimator does not manufacture stability where cohort size cannot support it.
+StageBridge therefore supports a reproducible, interpretable context-associated component of
+premalignant epithelial progression while defining the unresolved spatial scale of that association,
+contributing a prespecified estimand with a characterized recovery boundary rather than an unqualified
+positive claim.
+
+
+%% list of keywords seperated by comma
+\keywords{premalignant progression, lung adenocarcinoma, spatial transcriptomics, optimal transport,
+universal differential equations, gene regulatory networks, tumor microenvironment, single-cell}
+
+
+%%%%  committee members (add it right after the abstract w/o page break)
+\begin{singlespace}
+
+    %% if you have co-advisor, add here w/ \vspace{0.1in} as shown below
+    %% alternatively you can use minipage environment to put side-by-side
+    \section*{Primary reader and thesis advisor}
+
+    Dr. Chris Bradburne, PhD \\
+    Associate Professor\\
+    Department of Genetic Medicine\\
+    Johns Hopkins University, Baltimore, MD
+
+
+    \section*{Secondary readers}
+
+    [SECONDARY READER --- NAME TO BE ADDED] \\
+    Advanced Academic Programs\\
+    Krieger School of Arts and Sciences \\
+    Johns Hopkins University, Baltimore, MD
+
+    %% you can add more readers if you have them on your committee 
+    %% use \vspace{0.1in} in between members for clarity
+    %% you can also place committee members side-by-side using `minipage`
+
+
+\end{singlespace}

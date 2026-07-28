@@ -1,0 +1,55 @@
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- LaTeX build artifacts ---
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.nav
+*.snm
+*.vrb
+*.xdv
+*.idx
+*.ilg
+*.ind
+*.acn
+*.acr
+*.glg
+*.glo
+*.gls
+*.ist
+
+# Compiled thesis PDF (regenerate from source; comment out to release a built copy)
+00-main.pdf
+template.pdf
+
+# --- internal working docs (not part of the thesis) ---
+CLAUDE.md
+RESULTS_CENSUS_SYNTHESIS.md
+FINISH_CHECKLIST.md
+docs/superpowers/
+
+# --- WIP: not ready to commit yet (revisit before release) ---
+drafts/
+figures/
+
+# --- large data / results (kept in companion repo, not the thesis repo) ---
+results_data/
+results_hpc/
+data/
+
+# --- editor / env ---
+.vscode/
+.idea/
+*.swp
