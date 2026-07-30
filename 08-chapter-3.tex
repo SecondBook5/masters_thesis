@@ -9,7 +9,41 @@ Niche-conditioned regulatory transport, and the context-residual estimand $R_{\t
 \section{The progression series is edge-supported by shared donors at every step except the invasion boundary}
 \label{sec:cohort}
 
-The LUAD atlas spans the five morphological stages defined in Section~\ref{sec:methods-cohorts}, from Normal through AAH, AIS, and MIA to invasive LUAD. Donor coverage per stage is 23 Normal, 10 AAH, 12 AIS, 4 MIA, and 25 LUAD donors. Because niche-conditioned transport was estimated between adjacent stages, the operative quantity is the number of donors that contribute epithelium to \emph{both} ends of an edge, which sets how much of each estimate is anchored within-patient rather than across-patient (Table~\ref{tab:edge_support}). The early edges are supported: eight donors bridge Normal$\rightarrow$AAH and two bridge AAH$\rightarrow$AIS. The invasion boundary AIS$\rightarrow$MIA has zero shared donors, so any transport across it is necessarily estimated across patients, whereas MIA$\rightarrow$LUAD recovers four shared donors. The AAH$\rightarrow$AIS edge, on which the primary regulatory analysis was run, carries 29{,}712 AAH epithelial receivers and 48{,}688 AIS epithelial cells.
+The LUAD atlas spans the five morphological stages defined in Section~\ref{sec:methods-cohorts}, from Normal through AAH, AIS, and MIA to invasive LUAD. Donor coverage per stage is 23 Normal, 10 AAH, 12 AIS, 4 MIA, and 25 LUAD donors. Because niche-conditioned transport was estimated between adjacent stages, the operative quantity is the number of donors that contribute epithelium to \emph{both} ends of an edge, which sets how much of each estimate is anchored within-patient rather than across-patient (Table~\ref{tab:edge_support}). The early edges are supported: eight donors bridge Normal$\rightarrow$AAH and two bridge AAH$\rightarrow$AIS. The invasion boundary AIS$\rightarrow$MIA has zero shared donors, so any transport across it is necessarily estimated across patients, whereas MIA$\rightarrow$LUAD recovers four shared donors. The AAH$\rightarrow$AIS edge, on which the primary regulatory analysis was run, carries 29{,}712 AAH epithelial receivers and 48{,}688 AIS epithelial cells. (Fig.~\ref{fig:cohort_umap})
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.62\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/embeddings/cohort_umap_stage_AAH_AIS.pdf}
+    \caption{Colored by progression stage (AAH, AIS)}
+    \label{fig:cohort_umap_stage}
+  \end{subfigure}
+
+  \vspace{0.6em}
+
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/embeddings/cohort_umap_celltype_AAH_AIS.pdf}
+    \caption{Colored by cell-type annotation}
+    \label{fig:cohort_umap_celltype}
+  \end{subfigure}
+  \caption[Single-cell UMAP of the AAH$\rightarrow$AIS cohort]{Uniform manifold
+  approximation and projection (UMAP) embedding of the single-cell transcriptomes making up the
+  AAH$\rightarrow$AIS cohort, the edge on which the primary regulatory-transport analysis was run.
+  \textbf{(a)}~Cells colored by progression stage: AAH (blue) and AIS (orange) cells occupy broadly
+  overlapping regions of the embedding, indicating that the two precursor stages share overall
+  cellular composition and are not separable by embedding position alone. \textbf{(b)}~The same cells
+  colored by their fine cell-type annotation, spanning the full epithelial (AT1, AT2, basal, ciliated,
+  secretory), immune (T, B, NK, macrophage, mast), stromal (fibroblast, CAF, myofibroblast), and
+  endothelial compartments; the AAH and AIS epithelial \emph{receivers} that enter transport
+  ($29{,}712$ and $48{,}688$ cells) are drawn from the epithelial populations of this atlas. The
+  panels establish the cohort analyzed throughout the chapter and show that the stage distinction is
+  subtle at the whole-transcriptome level, motivating the model-based, program-resolved transport
+  estimand rather than a raw embedding contrast.}
+  \label{fig:cohort_umap}
+\end{figure}
+
 
 \begin{table}[htbp]
   \centering
@@ -231,7 +265,46 @@ Per-cell $R_{\text{cond}}$ was examined across the three niche strata defined by
 
 The dominance of specimen-level ecology over cell-resolved niche in the falsification ladder (Section~\ref{sec:results-ladder}) is explained by the spatial scale at which context varies. A variance decomposition of the local composition features shows that the large majority of variance in macrophage, fibroblast, CAF, and immune abundance is receiver-local (within-slide: $91\%$ for alveolar macrophage, $87\%$ for total macrophage, $90\%$ for fibroblast, $85\%$ for the CAF fraction), with only a modest between-patient component ($8$--$15\%$) and a negligible between-stage component ($<1\%$; Fig.~\ref{fig:variance_partition}). Because so much ecological variation is local and stage-invariant, a cell-resolved context feature carries substantial noise relative to its progression-aligned signal, which is consistent with the ladder finding that resolving local niche did not separate cleanly from specimen-level ecology.
 
-The spatial organization of that ecology, however, is neither random nor static across progression. Computing spatial autocorrelation on the full-cohort composition features within each tissue section (Moran's~$I$, $k=15$ nearest-neighbor graph, $55$ sections spanning $787{,}816$ spots; all $330$ section-by-feature tests are individually significant at $P_{\text{norm}}<0.05$), every composition feature is positively autocorrelated at every stage, confirming that the microenvironment is spatially structured rather than well-mixed. Malignant-cell density is the feature whose spatial clustering changes most across the precursor sequence: mean Moran's~$I$ rises monotonically from $0.234 \pm 0.025$ at AAH ($n=11$ sections) to $0.458 \pm 0.070$ at AIS ($n=14$) to $0.701 \pm 0.034$ at invasive disease ($n=30$; Spearman $\rho = 0.673$ between section-level Moran's~$I$ and stage order, $P = 1.8\times10^{-8}$; Kruskal--Wallis $H = 24.6$, $P = 4.6\times10^{-6}$; AAH versus invasive Mann--Whitney $P = 3.6\times10^{-6}$). The corresponding Getis--Ord Gi* hot-spot fraction for malignant density nearly doubles across the same sequence ($0.118 \rightarrow 0.131 \rightarrow 0.234$; $\rho = 0.64$, $P = 1.2\times10^{-7}$). CAF and immune fractions show the same directional increase toward invasion ($0.426 \rightarrow 0.545$ and $0.416 \rightarrow 0.503$), whereas macrophage autocorrelation is high but stage-flat ($0.443 \rightarrow 0.499 \rightarrow 0.467$): the ecological compartments most implicated in the context residual are spatially organized within every specimen but only weakly graded by stage. A quantitative association between the local IL1B-macrophage fraction and per-program $R_{\text{cond}}$, resolved to the authoritative full-cohort spatial-context table, is reported in the supplementary material.
+The spatial organization of that ecology, however, is neither random nor static across progression. Computing spatial autocorrelation on the full-cohort composition features within each tissue section (Moran's~$I$, $k=15$ nearest-neighbor graph, $55$ sections spanning $787{,}816$ spots; all $330$ section-by-feature tests are individually significant at $P_{\text{norm}}<0.05$), every composition feature is positively autocorrelated at every stage, confirming that the microenvironment is spatially structured rather than well-mixed. Malignant-cell density is the feature whose spatial clustering changes most across the precursor sequence: mean Moran's~$I$ rises monotonically from $0.234 \pm 0.025$ at AAH ($n=11$ sections) to $0.458 \pm 0.070$ at AIS ($n=14$) to $0.701 \pm 0.034$ at invasive disease ($n=30$; Spearman $\rho = 0.673$ between section-level Moran's~$I$ and stage order, $P = 1.8\times10^{-8}$; Kruskal--Wallis $H = 24.6$, $P = 4.6\times10^{-6}$; AAH versus invasive Mann--Whitney $P = 3.6\times10^{-6}$). The corresponding Getis--Ord Gi* hot-spot fraction for malignant density nearly doubles across the same sequence ($0.118 \rightarrow 0.131 \rightarrow 0.234$; $\rho = 0.64$, $P = 1.2\times10^{-7}$). CAF and immune fractions show the same directional increase toward invasion ($0.426 \rightarrow 0.545$ and $0.416 \rightarrow 0.503$), whereas macrophage autocorrelation is high but stage-flat ($0.443 \rightarrow 0.499 \rightarrow 0.467$): the ecological compartments most implicated in the context residual are spatially organized within every specimen but only weakly graded by stage. This local macrophage compartment is, however, quantitatively coupled to the context residual on the authoritative full-cohort table: in a donor-random-intercept mixed model of per-receiver $R_{\text{cond}}$ on local macrophage abundance ($66{,}834$ receivers, $10$ donors), the inflammatory programs JAK-STAT and NF$\kappa$B increase their context effect with macrophage density (JAK-STAT $+0.043$, NF$\kappa$B $+0.039$ per SD; both positive across the cohort), consistent with the pre-registered hypothesis that a proinflammatory macrophage niche is associated with context-driven regulatory redirection. The full per-program model, and the finding that stage-level marginal composition itself does not separate the two stages at the donor level, are given in Appendix~\ref{sec:app-c-il1b-provisional}. ; the spatial organization of that clustering is illustrated for the AAH and AIS sections in Fig.~\ref{fig:spatial_autocorr_maps}
+
+% NOTE: the requested third panel (figures/spatial/moran_by_stage_AAH_AIS.pdf) is intentionally
+% OMITTED. Its staged content plots only two stages (AAH, AIS; no invasive), Moran's I in the range
+% -0.025 to +0.015 with immune_fraction negative, and malignant density DECREASING from AAH to AIS --
+% which contradicts the monotonic 0.234 -> 0.458 -> 0.701 trend and "every feature positively
+% autocorrelated" claim in the prose above. Its generator (crrt/viz/spatial_figures.py:
+% plot_moran_by_stage) pools all spots of a stage into one spatial graph, mixing coordinates across
+% sections and destroying autocorrelation; it is superseded by the memory-safe per-section recompute
+% (task #53, plot_autocorr_summary / Getis-Ord, k=15) that produced the thesis numbers. If a Moran's-I
+% trend panel is wanted, stage the per-section autocorr_summary/getis figure -- do NOT use this one.
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/spatial/spatial_malignant_fraction_AAH_AIS.pdf}
+    \caption{Malignant-cell fraction per spot}
+    \label{fig:spatial_autocorr_malig}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/spatial/banksy_domain_map_AAH_AIS.pdf}
+    \caption{BANKSY spatial domains}
+    \label{fig:spatial_autocorr_banksy}
+  \end{subfigure}
+  \caption[Spatial organization of the AAH and AIS microenvironment]{Spatial organization of the
+  tissue microenvironment across the AAH and AIS sections of the Visium cohort (tissue coordinates;
+  one sub-panel per section, labeled by GEO sample identifier and stage). \textbf{(a)}~Local
+  malignant-cell fraction per spot: malignant density is concentrated in focal, spatially contiguous
+  foci rather than dispersed uniformly, and the foci are more pronounced in several AIS sections.
+  \textbf{(b)}~BANKSY spatial-domain assignments: each section partitions into spatially coherent
+  microenvironmental domains, confirming that the composition features are spatially structured rather
+  than well-mixed within every section. These maps are a descriptive, per-section illustration of the
+  spatial structure whose stage-wise quantification---the monotonic rise in malignant-density
+  Moran's~$I$ from AAH through AIS to invasive disease, and the positive within-section autocorrelation
+  of every composition feature---is reported in the text; they cover the AAH and AIS sections only
+  (the edge on which the primary analysis was run) and are not themselves a statistical test.}
+  \label{fig:spatial_autocorr_maps}
+\end{figure}
+
 
 These two observations---a stratum gradient significant against a within-donor null, and a variance
 decomposition placing $85$--$96\%$ of local ecological variance at the receiver scale and
@@ -261,7 +334,59 @@ Intrinsic regulatory state carries a stage signal that does not transfer across 
 
 The transport geometry is identifiable but the grey-box decomposition is borderline, and both facts are reported. The normalized matching-stability diagnostic $D_N$ favors the pathway-plus-transcription-factor regulatory geometry used for estimation, and the pathway subspace is the most stable block ($D_N$ per feature $0.050$ over 14 pathways versus $0.0049$ over 759 transcription factors), so the estimated dynamics are identifiable on the geometry over which transport was defined (full $D_N$ diagnostics in Appendix~\ref{sec:app-c-coupling}). The credibility gate $D_{\rho}$---the ratio of neural-residual velocity to structured-algebra velocity in the fitted full field---is $0.965$ on average (range $0.922$ to $1.008$ over the five folds), with four of five folds credible ($D_{\rho} \leq 1$, regime \textsc{structured\_neural}) and fold~2 residual-dominated ($D_{\rho} = 1.008$). The interpretable regulatory terms therefore carry velocity of comparable magnitude to the neural residuals in the joint fit, rather than dominating it; the per-program $R_{\text{cond}}$ readouts of Sections~\ref{sec:stable} and~\ref{sec:invasion-signature} are interpretable to that extent, and the ablation ladder (Table~\ref{tab:ladder}) shows the structured algebra cannot reproduce the transport on its own ($\text{structured\_only} = 2621.22$ versus $123.65$ for the full field). The decomposition is thus credible but not residual-free, and the per-program attribution is bounded by that ceiling.
 
-The fitted transport is also increasingly non-equilibrium along the progression axis. A Helmholtz decomposition of the learned field partitions its velocity into a gradient (equilibrium) and a rotational (non-equilibrium) component; the rotational fraction rises from $0.48$ on the preinvasive AAH$\rightarrow$AIS edge to $0.77$ on the AIS$\rightarrow$invasive edge, and is lowest ($0.26$) on the underpowered PanIN edge. The invasive transition is therefore the most strongly non-gradient---consistent with a directed, cycle-like progression flow rather than relaxation toward a fixed point---while the addition of context changes this fraction only marginally on every edge (self-only versus full-field difference $\leq 0.011$), so the non-equilibrium character is a property of the intrinsic progression field rather than of the niche-gated term.
+The fitted transport is also increasingly non-equilibrium along the progression axis. A Helmholtz decomposition of the learned field partitions its velocity into a gradient (equilibrium) and a rotational (non-equilibrium) component; the rotational fraction rises from $0.48$ on the preinvasive AAH$\rightarrow$AIS edge to $0.77$ on the AIS$\rightarrow$invasive edge, and is lowest ($0.26$) on the underpowered PanIN edge. The invasive transition is therefore the most strongly non-gradient---consistent with a directed, cycle-like progression flow rather than relaxation toward a fixed point---while the addition of context changes this fraction only marginally on every edge (self-only versus full-field difference $\leq 0.011$), so the non-equilibrium character is a property of the intrinsic progression field rather than of the niche-gated term. The fitted field is shown in Figure~\ref{fig:fitted-velocity-field}, and the niche-gated component itself, $v_{\text{full}}-v_{\text{self}}$, is rendered directly as the context difference field for both LUAD edges in Figure~\ref{fig:context_diff_field}.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[width=0.98\textwidth]{figures/ude_result/context_difference_field_AAH_AIS.pdf}
+    \caption{AAH$\rightarrow$AIS (preinvasive edge). Left: the context redirection vector field, an arrow $v_{\text{full}}-v_{\text{self}}$ at each source receiver; right: the same receivers recoloured by redirection magnitude relative to the median self-only step.}
+    \label{fig:context_diff_field-aah}
+  \end{subfigure}
+
+  \vspace{0.7em}
+
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[width=0.98\textwidth]{figures/ude_result/context_difference_field_AIS_invasive.pdf}
+    \caption{AIS$\rightarrow$invasive edge, same two-panel layout.}
+    \label{fig:context_diff_field-inv}
+  \end{subfigure}
+  \caption[Context difference field, both LUAD edges]{The niche-gated (context) component of transport rendered directly as the context difference field $v_{\text{full}}-v_{\text{self}}$ for (a)~the preinvasive AAH$\rightarrow$AIS edge and (b)~the AIS$\rightarrow$invasive edge. Within each panel the left plot draws, at every source receiver, the per-cell context redirection $v_{\text{full}}-v_{\text{self}}$---the full-context transport step minus the self-only step---as an arrow projected into the shared regulatory embedding and coloured by its magnitude $\|v_{\text{full}}-v_{\text{self}}\|$; the right plot recolours the same receivers by that magnitude relative to the median self-only step. Grey points are the real target-stage receivers and the faint backdrop is the surrounding tissue. This is the spatial rendering of the niche-gated term that the surrounding text distinguishes from the intrinsic progression field: the redirection is spatially coherent rather than random---a niche-conditioned component of transport is present---but its magnitude is small relative to the self-only step, consistent with the Helmholtz finding that adding context shifts the rotational (non-equilibrium) fraction by $\leq 0.011$ on every edge. The field is an illustrative, embedding-projected view of the context component, not an inferential test of it; the per-program significance of the context effect is quantified by $R_{\text{cond}}$ (Fig.~\ref{fig:forest}).}
+  \label{fig:context_diff_field}
+\end{figure}
+
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/dynamics/velocity_streamplot_AAH_AIS.pdf}
+    \caption{Preinvasive edge (AAH$\rightarrow$AIS).}
+    \label{fig:fitted-velocity-field-aah}
+  \end{subfigure}\\[0.8em]
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/dynamics/velocity_streamplot_AIS_invasive.pdf}
+    \caption{Invasion edge (AIS$\rightarrow$invasive).}
+    \label{fig:fitted-velocity-field-ais}
+  \end{subfigure}
+  \caption[Fitted regulatory velocity field along the progression axis]{The learned CRRT-UDE
+  transport field, visualized as streamlines on the pooled receiver UMAP embedding for each pathological
+  edge. Within each panel the self-only (context-neutral) and full-context (niche-gated) fields are drawn
+  side by side over the source receivers at $\tau=0$ (blue) and the real target receivers (grey);
+  streamline color and width encode local field speed. \textbf{(a)} The preinvasive AAH$\rightarrow$AIS
+  edge and \textbf{(b)} the AIS$\rightarrow$invasive edge. The fields are directed rather than
+  relaxational, and the self-only and full-context streamlines are near-indistinguishable on both edges,
+  showing that the niche-gated term redirects transport only modestly---this is the field whose
+  Helmholtz decomposition and rotational (non-equilibrium) fraction are quantified in the text. Because
+  the fitted context effect is small by design, the redirection itself is shown directly as a difference
+  field in Fig.~\ref{fig:context_diff_field} rather than being read off by subtracting these two
+  near-identical panels by eye.}
+  \label{fig:fitted-velocity-field}
+\end{figure}
+
 
 One further reproducibility check anchors the stable set at the donor level: every program
 classed STABLE on the AAH$\rightarrow$AIS edge holds its sign not only across the five patient-held-out

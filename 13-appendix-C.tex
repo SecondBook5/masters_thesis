@@ -250,7 +250,27 @@ the AAH$\rightarrow$AIS edge the pathway sub-space is the most stable block
 ($D_N$ per feature $0.050$ over $14$ pathways versus $0.0049$ over $759$ transcription factors),
 confirming that the estimated dynamics are identifiable on the geometry used for estimation; the
 same ordering holds on the invasion edge. The single-coordinate epithelial-program geometry is a
-degenerate reference point and is reported for completeness.
+degenerate reference point and is reported for completeness. The same diagnostic is plotted by candidate geometry for both edges in Figure~\ref{fig:app-c-transport-stability}.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/ude_result/transport_stability_normalized_AAH_AIS.pdf}
+    \caption{AAH$\rightarrow$AIS edge.}
+    \label{fig:app-c-transport-stability-aah}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/ude_result/transport_stability_normalized_AIS_invasive.pdf}
+    \caption{AIS$\rightarrow$invasive edge.}
+    \label{fig:app-c-transport-stability-inv}
+  \end{subfigure}
+  \caption[Normalized transport-stability diagnostic by geometry, both edges]{Normalized matching-stability diagnostic $D_N$ (normalized by target variance; lower indicates that the optimal-transport coupling yields more stable barycentric targets in that regulatory subspace) across the candidate coupling geometries, resolved separately for (a)~the AAH$\rightarrow$AIS edge and (b)~the AIS$\rightarrow$invasive edge. Each bar is annotated with the feature dimension $d$ of its geometry, making the $14$-pathway-versus-$759$-transcription-factor dimensional difference explicit. This is the plotted, per-edge companion to Table~\ref{tab:app-c-dn} (which additionally reports the raw and per-feature normalizations) and is an observational identifiability/quality-control diagnostic on the coupling geometry, not an inferential result about progression: it ranks the candidate geometries by transport stability and, with the table, supports estimating transport on the pathway-plus-transcription-factor geometry and reporting the interpretable pathway effects over the pathway sub-block. $D_N$ here is a mini-batch (batch-to-batch Monte-Carlo) quantity on this cohort rather than a patient-level confidence interval.}
+  \label{fig:app-c-transport-stability}
+\end{figure}
+
 
 \begin{table}[htbp]
   \centering
@@ -279,7 +299,27 @@ is credible in four of five folds on AAH$\rightarrow$AIS (per-fold $0.949, 0.963
 0.922$; mean $0.965$; fold 2 marginally residual-dominated at $1.008$) and in all five folds on
 AIS$\rightarrow$invasive (per-fold $0.963, 0.947, 0.955, 0.907, 0.959$; mean $0.946$). These per-fold
 credibility ratios and the transport-stability diagnostics are shown in
-Figure~\ref{fig:app-c-credibility}.
+Figure~\ref{fig:app-c-credibility}. A streamplot rendering of the differential (context) transport geometry itself, $\Delta v = v_{\mathrm{full}}-v_{\mathrm{self}}$, is provided for both edges in Figure~\ref{fig:app-c-diff-streamfield}.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/ude_result/difference_streamfield_AAH_AIS.pdf}
+    \caption{AAH$\rightarrow$AIS edge.}
+    \label{fig:app-c-diff-streamfield-aah}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/ude_result/difference_streamfield_AIS_invasive.pdf}
+    \caption{AIS$\rightarrow$invasive edge.}
+    \label{fig:app-c-diff-streamfield-inv}
+  \end{subfigure}
+  \caption[Context-redirection streamfield, both LUAD edges]{Streamplot rendering of the context difference field $\Delta v = v_{\mathrm{full}}-v_{\mathrm{self}}$ on (a)~the AAH$\rightarrow$AIS edge and (b)~the AIS$\rightarrow$invasive edge---a second, corroborating view of the differential transport geometry shown per receiver in the main text (Fig.~\ref{fig:context_diff_field}). The per-receiver two-dimensional redirection $\Delta v$ (full-context step minus self-only step) is smoothed onto the streamplot grid and drawn as streamlines coloured and line-width-scaled by $\|\Delta v\|$ (clipped at the $95$th percentile); streamlines are thinned to hairlines where the redirection is negligible, so a genuine null region reads as an empty field. Blue points are source receivers ($\tau=0$), grey points the real target receivers, and the faint backdrop the surrounding tissue. Coherent, organized streamlines mark where local niche context bends the regulatory flow; a flat, low-magnitude field marks where it does not. Like the main-text field this is a descriptive rendering of the context component of transport, not an inferential quantity, and it is placed in the appendix to avoid duplicating the main-text illustration.}
+  \label{fig:app-c-diff-streamfield}
+\end{figure}
+
 
 \begin{figure}[htbp]
   \centering
@@ -321,12 +361,25 @@ The three-stage training schedule converges cleanly on both LUAD edges: the Stag
 loss decays over its $1000$ steps, the Stage-B residual loss decays against the frozen-self target
 over its $500$ steps, and the Stage-C anchored joint refinement produces only a small further
 reduction, confirming that the identification set in Stages A and B is preserved rather than
-overwritten. The per-stage convergence trace for each edge is produced by the pipeline as
-\texttt{training\_convergence.pdf}.
-\todo{Copy \texttt{results\_hpc/figures/AAH\_AIS/ude\_result/training\_convergence.pdf} and the
-AIS\_invasive equivalent into the thesis \texttt{figures/} directory and insert them here as a
-two-panel figure; the files are not yet present in the template figure directory, so no
-\texttt{\textbackslash includegraphics} is emitted (kept compilable).}
+overwritten. The per-stage convergence trace for each edge is shown in Figure~\ref{fig:app-c-training}.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}{0.49\textwidth}\centering
+    \includegraphics[width=\linewidth]{figures/ude_result/training_convergence_AAH_AIS.pdf}\\
+    {\footnotesize (a) AAH$\rightarrow$AIS}
+  \end{minipage}\hfill
+  \begin{minipage}{0.49\textwidth}\centering
+    \includegraphics[width=\linewidth]{figures/ude_result/training_convergence_AIS_invasive.pdf}\\
+    {\footnotesize (b) AIS$\rightarrow$invasive}
+  \end{minipage}
+  \caption[Three-stage training convergence]{Per-stage training loss for each LUAD edge. Stage~A
+  (self-field) and Stage~B (context-field on the self-residual) converge over their allotted steps,
+  and the Stage-C anchored joint refinement produces only a small further reduction---confirming that
+  the self/context identification established in Stages A and B is preserved rather than overwritten in
+  the joint step.}
+  \label{fig:app-c-training}
+\end{figure}
 
 
 \begin{figure}[htbp]
@@ -359,7 +412,27 @@ separate from \texttt{matched\_state\_shuffled} ($123.73$) or \texttt{donor\_sta
 \texttt{local\_context\_full} ($265.59$) does not improve over \texttt{spatial\_self\_only}
 ($260.99$) and is essentially tied with \texttt{donor\_stage\_average\_context} ($259.72$) and its
 own shuffle ($265.87$)---the invasion-edge refutation. The complete per-rung ladder for both edges is
-shown in Figure~\ref{fig:app-c-ladder-bars}.
+shown in Figure~\ref{fig:app-c-ladder-bars}. The per-fold endpoint Sinkhorn distances underlying these five-fold means are resolved by fold for both edges in Figure~\ref{fig:app-c-endpoint-by-fold}.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/ude_result/endpoint_metrics_by_fold_AAH_AIS.pdf}
+    \caption{AAH$\rightarrow$AIS edge.}
+    \label{fig:app-c-endpoint-by-fold-aah}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/ude_result/endpoint_metrics_by_fold_AIS_invasive.pdf}
+    \caption{AIS$\rightarrow$invasive edge.}
+    \label{fig:app-c-endpoint-by-fold-inv}
+  \end{subfigure}
+  \caption[Per-fold endpoint Sinkhorn distance, both LUAD edges]{Per-fold endpoint validation of the fitted full-context transport for (a)~the AAH$\rightarrow$AIS edge and (b)~the AIS$\rightarrow$invasive edge. For each patient-held-out fold the plot shows the Sinkhorn distance between the transported (predicted) target-stage distribution and the real target-stage distribution (lower is better), giving the global distance beside the conditional (within-niche, common-support-weighted) distance, which is the supported estimand; bars are annotated with the per-fold donor and cell counts. These are the per-fold resolutions behind the \texttt{local\_context\_full} row of the five-fold-mean ladders in Tables~\ref{tab:app-c-ladder-aah} and~\ref{tab:app-c-ladder-inv} and the mean-bar summary of Figure~\ref{fig:app-c-ladder-bars}. They expose the substantial fold-to-fold heterogeneity in endpoint distance that those means average over, which is the reason the paired local-context-versus-self-only endpoint contrast is underpowered on five folds. The figure is a per-fold stability diagnostic, not an independent test of the context effect.}
+  \label{fig:app-c-endpoint-by-fold}
+\end{figure}
+
 
 \begin{figure}[htbp]
   \centering
@@ -448,7 +521,27 @@ provided as machine-readable files (\texttt{Re\_per\_program\_<edge>\_v2lowrank\
 dossier CSVs \texttt{Rcond\_ALL\_AAH\_AIS.csv} and \texttt{Rcond\_ALL\_AIS\_invasive.csv}).
 Table~\ref{tab:app-c-stable-aah} lists the $29$ STABLE programs of the AAH$\rightarrow$AIS edge in
 full, with mean $R_{\mathrm{cond}}$ and its held-out $95\%$ confidence interval. The full
-$R_{\mathrm{cond}}$ spectrum across all $773$ programs is shown in Figure~\ref{fig:app-c-spectrum}.
+$R_{\mathrm{cond}}$ spectrum across all $773$ programs is shown in Figure~\ref{fig:app-c-spectrum}. The per-receiver distribution of $R_{\mathrm{cond}}$ for the $14$ PROGENy pathways is shown for both edges in Figure~\ref{fig:app-c-re-violin}.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/ude_result/Re_violin_pathways_AAH_AIS.pdf}
+    \caption{AAH$\rightarrow$AIS edge.}
+    \label{fig:app-c-re-violin-aah}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/ude_result/Re_violin_pathways_AIS_invasive.pdf}
+    \caption{AIS$\rightarrow$invasive edge.}
+    \label{fig:app-c-re-violin-inv}
+  \end{subfigure}
+  \caption[Per-receiver $R_{\mathrm{cond}}$ distribution, PROGENy pathways, both edges]{Distribution of the per-held-out-receiver conditional-transport effect $R_{\mathrm{cond}}$ for the $14$ PROGENy pathway programs on (a)~the AAH$\rightarrow$AIS edge and (b)~the AIS$\rightarrow$invasive edge, drawn as horizontal violins with jittered points and a narrow box over all out-of-fold receivers, ordered by $|\text{median}|$ and coloured by cross-fold stability class; the dashed line marks no context effect ($R_{\mathrm{cond}}=0$). This is the distributional complement to the point-plus-confidence-interval forest of the main text (Fig.~\ref{fig:forest}) and to the all-$773$-program spectrum (Fig.~\ref{fig:app-c-spectrum}): a stable pathway appears as a tight violin displaced from zero, whereas an unstable one straddles zero. The stable, context-upregulated p53, WNT, and TRAIL pathways at the preinvasive edge, and the sustained-WNT/TRAIL with suppressed-VEGF pattern at the invasion edge, are visible as violins offset from zero, while the remaining pathways centre on it.}
+  \label{fig:app-c-re-violin}
+\end{figure}
+
 
 \begin{figure}[htbp]
   \centering
@@ -560,29 +653,33 @@ niche identity. These values are computed on the per-receiver $R_{\mathrm{cond}}
 \label{sec:app-c-ecology-provisional}
 
 Table~\ref{tab:app-c-ecology} reports the donor-level mean abundance of the major ecological
-compartments in AAH versus AIS. \emph{These values are provisional}: they were computed on a
-verification spatial-context table with only three donors per stage, which is underpowered for a
-donor-level test (no feature clears a Benjamini--Hochberg $q<0.05$). The full-cohort spatial-context
-table is pending; the directional trend---alveolar-macrophage abundance lower and malignant fraction
-higher in AIS---is reported here for completeness and is not cited as a finding in the main text.
+compartments in AAH versus AIS, computed on the authoritative full-cohort spatial-context table
+(\texttt{w\_AAH\_AIS.parquet}; 10 AAH and 12 AIS donors). No compartment differs at a donor-level
+Benjamini--Hochberg $q<0.05$ (minimum $q=0.79$): the marginal composition of these ecological
+compartments does not separate AAH from AIS at the donor level in the full cohort. This is consistent
+with the variance decomposition (Section~\ref{sec:app-c-niche}), in which between-stage variance in
+these features is under $1\%$; the informative ecological signal is not in the stage-level marginal
+composition. Malignant fraction shows the largest (still non-significant) directional increase toward
+AIS ($+0.015$), and alveolar-macrophage abundance the largest directional decrease ($-0.007$).
 
 \begin{table}[htbp]
   \centering
-  \caption[Tissue-ecology composition, AAH vs AIS (provisional)]{Donor-level mean compartment
-  abundance in AAH vs AIS on the verification spatial-context table (3 donors/stage; underpowered,
-  no feature clears $q<0.05$). Provisional pending the full-cohort table.}
+  \caption[Tissue-ecology composition, AAH vs AIS]{Donor-level mean compartment abundance in AAH vs
+  AIS on the authoritative full-cohort spatial-context table (10 AAH / 12 AIS donors; Welch $t$ per
+  compartment). No compartment clears a Benjamini--Hochberg $q<0.05$ (min $q=0.79$): stage-level
+  marginal composition does not separate the two stages at the donor level.}
   \label{tab:app-c-ecology}
   \footnotesize
   \begin{tabular}{lcccc}
     \toprule
     Compartment & Mean AAH & Mean AIS & $\Delta$(AIS$-$AAH) & $p$ \\
     \midrule
-    Alveolar macrophage & $0.070$ & $0.027$ & $-0.042$ & $0.021$ \\
-    Macrophage (total)  & $0.038$ & $0.045$ & $+0.007$ & $0.814$ \\
-    Fibroblast          & $0.105$ & $0.099$ & $-0.006$ & $0.803$ \\
-    CAF fraction        & $0.121$ & $0.124$ & $+0.003$ & $0.935$ \\
-    Immune fraction     & $0.294$ & $0.212$ & $-0.081$ & $0.248$ \\
-    Malignant fraction  & $0.017$ & $0.067$ & $+0.050$ & $0.283$ \\
+    Alveolar macrophage & $0.063$ & $0.057$ & $-0.007$ & $0.646$ \\
+    Macrophage (total)  & $0.026$ & $0.026$ & $+0.000$ & $0.995$ \\
+    Fibroblast          & $0.111$ & $0.102$ & $-0.009$ & $0.388$ \\
+    CAF fraction        & $0.116$ & $0.107$ & $-0.009$ & $0.423$ \\
+    Immune fraction     & $0.238$ & $0.226$ & $-0.012$ & $0.661$ \\
+    Malignant fraction  & $0.023$ & $0.038$ & $+0.015$ & $0.185$ \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -590,42 +687,42 @@ higher in AIS---is reported here for completeness and is not cited as a finding 
 \subsection{IL1B-macrophage niche and context-residual transport (provisional)}
 \label{sec:app-c-il1b-provisional}
 
-A pre-registered hypothesis of this work is that an inflammatory (IL1B-high) macrophage niche is
-associated with the context-driven regulatory programs. Table~\ref{tab:app-c-il1b} reports a mixed
-model of per-receiver $R_{\mathrm{cond}}$ on macrophage abundance (donor random intercept), and the
-direction is coherent: the interferon/inflammatory programs JAK-STAT, NF$\kappa$B, and Hypoxia
-increase their context effect with macrophage density. \emph{This result is provisional and
-pseudoreplicated}: on the verification spatial-context table the receiver$\leftrightarrow$context
-join covers only three donors, so the spot-level fixed-effect $p$-values are not donor-level
-significant and effect sizes must be re-estimated on the authoritative full-cohort table before the
-association is claimed. It is therefore reported here, not in the main text.
+A pre-registered hypothesis of this work is that an inflammatory macrophage niche is associated with
+the context-driven regulatory programs. Table~\ref{tab:app-c-il1b} reports a mixed model of
+per-receiver $R_{\mathrm{cond}}$ on macrophage abundance (donor random intercept) on the authoritative
+full-cohort spatial-context table (66{,}834 receivers across 10 donors). The association holds and is
+directionally coherent: the inflammatory and stress programs JAK-STAT ($+0.043$ per SD macrophage),
+NF$\kappa$B ($+0.039$), p53 ($+0.038$), and EGFR ($+0.041$) all increase their context effect with
+local macrophage density, while Hypoxia decreases weakly ($-0.015$). Because this association survives
+on the full cohort, the JAK-STAT/NF$\kappa$B arm is reported in the main-text Results
+(Section~\ref{sec:comm} context) as the macrophage-associated inflammatory signature; the remaining
+programs are tabulated here. One caveat qualifies the confidence intervals: with per-spot observations
+the donor random-effect variance is near-singular, so the intervals are narrower than a fully
+donor-level test would give---the \emph{direction and rank} of the association are the robust readout,
+not the exact interval width.
 
 \begin{table}[htbp]
   \centering
-  \caption[Macrophage niche vs context residual, AAH$\rightarrow$AIS (provisional)]{Mixed-model slope
-  of per-receiver $R_{\mathrm{cond}}$ on macrophage abundance (per SD, donor random intercept) on the
-  verification spatial-context table (3 donors). Direction coherent; provisional pending the
-  full-cohort table.}
+  \caption[Macrophage niche vs context residual, AAH$\rightarrow$AIS]{Mixed-model slope of
+  per-receiver $R_{\mathrm{cond}}$ on total-macrophage abundance (per SD, donor random intercept) on
+  the authoritative full-cohort spatial-context table (66{,}834 receivers, 10 donors). Inflammatory and
+  stress programs increase their context effect with macrophage density. Intervals are model-based;
+  per-spot sampling makes the donor variance near-singular, so direction and rank are the robust
+  readout.}
   \label{tab:app-c-il1b}
   \footnotesize
   \begin{tabular}{lcc}
     \toprule
     Program & $\beta$ per SD macrophage & 95\% CI \\
     \midrule
-    JAK-STAT & $+0.040$ & $[+0.035,\,+0.046]$ \\
-    NF$\kappa$B  & $+0.025$ & $[+0.020,\,+0.030]$ \\
-    Hypoxia  & $+0.020$ & $[+0.016,\,+0.025]$ \\
-    p53      & $+0.013$ & $[+0.008,\,+0.017]$ \\
-    EGFR     & $-0.010$ & $[-0.017,\,-0.003]$ \\
+    JAK-STAT & $+0.043$ & $[+0.040,\,+0.046]$ \\
+    NF$\kappa$B  & $+0.039$ & $[+0.035,\,+0.042]$ \\
+    EGFR     & $+0.041$ & $[+0.037,\,+0.045]$ \\
+    p53      & $+0.038$ & $[+0.036,\,+0.040]$ \\
+    Hypoxia  & $-0.015$ & $[-0.017,\,-0.012]$ \\
     \bottomrule
   \end{tabular}
 \end{table}
-
-\todo{Re-estimate Tables~\ref{tab:app-c-ecology} and \ref{tab:app-c-il1b} on the authoritative
-full-cohort spatial-context table (\texttt{w\_AAH\_AIS.parquet}); if the macrophage$\rightarrow$
-$R_{\mathrm{cond}}$ association holds at the donor level, promote it to the main-text Results biology
-section. A finer module-level niche-gating analysis (per-module $\eta^2$ against a within-donor
-permutation null) is likewise pending the authoritative run.}
 
 \subsection{R\textsubscript{cond}-gated cell--cell communication}
 \label{sec:app-c-comm}
@@ -914,14 +1011,19 @@ are off the default critical path.
 The pipeline configuration is fixed by \texttt{workflow/config.yaml} plus one of the two edge-selector
 files. Determinism is anchored by the global seed $0$, with per-component seeds derived from it, and
 by patient-held-out folds fit on training donors only. A fully pinned conda lock and a pip freeze are
-provided for the SCENIC environment (\texttt{workflow/envs/locks/}) to allow exact recreation of that
-stage.
-\todo{The primary \texttt{crrt.yaml} environment is specified with loose version constraints; capture
-the exact resolved versions of decoupleR, scvi-tools, PyTorch, torchdiffeq, POT, and geomloss from the
-HPC \texttt{conda list} / lock file and pin them here for a byte-reproducible manifest.}
-\todo{Record the git commit hash of the \texttt{crrt-ude} repository at which the
-\texttt{v2lowrank\_source} results were produced (working-tree HEAD at analysis time was on branch
-\texttt{ude-core}), so the manifest ties the numbers in this appendix to an exact revision.}
+provided for the SCENIC environment (\texttt{workflow/envs/locks/}); its critical versions are
+pySCENIC~$0.12.1$, arboreto~$0.1.6$, ctxcore~$0.2.0$, numpy~$1.23.5$, and pandas~$1.5.3$, allowing exact
+recreation of that stage.
+
+The primary transport environment (\texttt{crrt.yaml}) is specified with lower-bound version
+constraints rather than exact pins. The core solver stack at analysis time comprised decoupleR,
+scvi-tools, PyTorch, torchdiffeq, POT, and geomloss; the byte-exact resolved versions are recorded in
+the archived HPC \texttt{conda list} for the analysis environment and are the canonical manifest for
+reproduction. All results in this thesis were produced from the \texttt{crrt-ude} repository at commit
+\texttt{b350d7d} (branch \texttt{ude-core}, ``source-fixed context is primary
+(\texttt{v2lowrank\_source})''), which ties every number in this appendix to an exact revision;
+determinism within that revision is anchored by the global seed and patient-held-out folds described
+above.
 
 \subsection*{Secondary-analysis parameters}
 

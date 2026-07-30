@@ -87,9 +87,100 @@ The second explanation is biological scale. Progression-relevant ecology may be 
 \subsection{Helmholtz structure of the fitted progression field}
 \label{sec:helmholtz-discussion}
 
-The Helmholtz analysis provides a complementary geometric description of the fitted field. The rotational fraction increased from $0.48$ on the preinvasive edge to $0.77$ at invasion, whereas context altered that fraction by at most $0.011$ on any edge. This suggests that the invasion field was less well represented by a purely potential-like component than the preinvasive field and that the rotational structure was primarily carried by the progression field rather than the fitted context perturbation.
+The Helmholtz analysis provides a complementary geometric description of the fitted field. The rotational fraction increased from $0.48$ on the preinvasive edge to $0.77$ at invasion, whereas context altered that fraction by at most $0.011$ on any edge. This suggests that the invasion field was less well represented by a purely potential-like component than the preinvasive field and that the rotational structure was primarily carried by the progression field rather than the fitted context perturbation. (Figs.~\ref{fig:helmholtz-decomposition} and~\ref{fig:flux-index-self-full})
 
-Hodge decomposition has been applied to RNA-velocity fields to distinguish curl-free, divergence-associated, and cyclic components of cellular dynamics \autocite{Su2024-yq}, and landscape--flux approaches use the coexistence of a potential landscape and non-equilibrium flux to characterize biological systems that cannot be described as simple downhill relaxation \autocite{Wang2008-hd, Wang2011-ai, Zhu2024-it}. In StageBridge, however, the decomposition is applied to a deterministic field learned from pathology-ordered cross-sectional distributions. The rotational component is therefore a property of the fitted vector field, not direct evidence of a biochemical limit cycle, irreversible evolution, or a measured thermodynamic flux.
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/dynamics/flux_index_self_vs_full_AAH_AIS.pdf}
+    \caption{Preinvasive edge (AAH$\rightarrow$AIS).}
+    \label{fig:flux-index-self-full-aah}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/dynamics/flux_index_self_vs_full_AIS_invasive.pdf}
+    \caption{Invasion edge (AIS$\rightarrow$invasive).}
+    \label{fig:flux-index-self-full-ais}
+  \end{subfigure}
+  \caption[Non-equilibrium flux fraction, self-only versus full context]{Scalar non-equilibrium flux
+  fraction $\lVert v_{\text{rot}}\rVert/\lVert v\rVert$ (0 = purely gradient/equilibrium, 1 = purely
+  rotational) computed for the self-only and full-context fields on each edge. \textbf{(a)} On the
+  preinvasive AAH$\rightarrow$AIS edge the fraction is $0.48$ (self-only) versus $0.49$ (full context),
+  a context contribution of $+0.01$; \textbf{(b)} on the AIS$\rightarrow$invasive edge it is $0.77$ under
+  both fields ($+0.00$). Adding niche context changes the non-equilibrium fraction by at most $+0.01$
+  on either edge, so the flux structure is a property of the intrinsic progression field rather than of
+  the fitted context perturbation, while the fraction itself is far higher at invasion ($0.77$) than at
+  the preinvasive step ($0.48$)---the geometrically more complex reorganization. These are the
+  grid-matched headline values quoted in the text and paired with the Helmholtz decomposition of
+  Fig.~\ref{fig:helmholtz-decomposition}.}
+  \label{fig:flux-index-self-full}
+\end{figure}
+
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/dynamics/helmholtz_decomposition_full_AAH_AIS.pdf}
+    \caption{Preinvasive edge (AAH$\rightarrow$AIS).}
+    \label{fig:helmholtz-decomposition-aah}
+  \end{subfigure}\\[0.8em]
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/dynamics/helmholtz_decomposition_full_AIS_invasive.pdf}
+    \caption{Invasion edge (AIS$\rightarrow$invasive).}
+    \label{fig:helmholtz-decomposition-ais}
+  \end{subfigure}
+  \caption[Helmholtz--Hodge decomposition of the fitted progression field]{Helmholtz--Hodge
+  decomposition of the full (niche-gated) learned field on the receiver UMAP embedding, for each edge.
+  Left: the full field $v$ over its speed map. Center: the curl-free gradient part $-\nabla\Phi$ drawn
+  over the scalar potential landscape $\Phi$ (the equilibrium, potential-representable component). Right:
+  the divergence-free rotational part $v_{\text{rot}}$ (the non-equilibrium circulating flux). Each
+  panel's suptitle annotates the non-equilibrium flux fraction $\lVert v_{\text{rot}}\rVert/\lVert
+  v\rVert$ evaluated on the $28$-node decomposition grid ($0.53$ on the preinvasive edge, $0.76$ at
+  invasion); the grid-matched headline values reported in the text ($0.48$ and $0.77$) are computed on
+  the coarser flux-index grid (Fig.~\ref{fig:flux-index-self-full}). \textbf{(a)} The preinvasive edge
+  is more nearly gradient-like; \textbf{(b)} the invasion edge carries a larger rotational fraction and
+  is therefore less well represented by a pure potential component. The decomposition is applied to a
+  deterministic field fitted to pathology-ordered cross-sectional distributions and is descriptive of
+  that field's geometry---it is not evidence of a measured thermodynamic flux or a biochemical limit
+  cycle.}
+  \label{fig:helmholtz-decomposition}
+\end{figure}
+
+
+Hodge decomposition has been applied to RNA-velocity fields to distinguish curl-free, divergence-associated, and cyclic components of cellular dynamics \autocite{Su2024-yq}, and landscape--flux approaches use the coexistence of a potential landscape and non-equilibrium flux to characterize biological systems that cannot be described as simple downhill relaxation \autocite{Wang2008-hd, Wang2011-ai, Zhu2024-it}. In StageBridge, however, the decomposition is applied to a deterministic field learned from pathology-ordered cross-sectional distributions. The rotational component is therefore a property of the fitted vector field, not direct evidence of a biochemical limit cycle, irreversible evolution, or a measured thermodynamic flux. (Fig.~\ref{fig:potential-landscape})
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/dynamics/potential_landscape_AAH_AIS.pdf}
+    \caption{Preinvasive edge (AAH$\rightarrow$AIS).}
+    \label{fig:potential-landscape-aah}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/dynamics/potential_landscape_AIS_invasive.pdf}
+    \caption{Invasion edge (AIS$\rightarrow$invasive).}
+    \label{fig:potential-landscape-ais}
+  \end{subfigure}
+  \caption[Fitted potential landscape of the progression field]{The potential-landscape half of the
+  landscape--flux description of the fitted field. For each edge the Helmholtz gradient potential
+  $\Phi$---the equilibrium component of the decomposition in
+  Fig.~\ref{fig:helmholtz-decomposition}---is sampled at every receiver and rendered as a
+  Waddington-style surface over the PHATE embedding, with receivers draped on the surface. \textbf{(a)}
+  The preinvasive AAH$\rightarrow$AIS edge and \textbf{(b)} the AIS$\rightarrow$invasive edge; the
+  invasion field is less fully captured by this gradient/potential component, consistent with its larger
+  rotational residual. This surface is the potential of the \emph{fitted transport field} and is
+  distinct from the empirical $-\log$ density landscape of Fig.~\ref{fig:waddington}: neither is a
+  measured free energy, and the coexistence of this potential with the non-equilibrium flux of
+  Fig.~\ref{fig:helmholtz-decomposition} is a geometric property of the learned field rather than a
+  thermodynamic claim.}
+  \label{fig:potential-landscape}
+\end{figure}
+
 
 The two pathological edges differ in how much of their learned motion can be represented by a gradient component under the same analysis. The result becomes biologically stronger if it is stable across folds, alternative state bases, regularization strengths, and boundary conditions for the decomposition. Those sensitivity analyses should accompany any future claim connecting the rotational component to plasticity, recurrence, or path dependence. Within this thesis, the Helmholtz result supports the conclusion that invasion involves a more geometrically complex reorganization than the earlier transition, while remaining separate from the evidence about the spatial scale of context.
 
