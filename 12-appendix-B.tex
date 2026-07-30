@@ -96,8 +96,9 @@ so the identification established in Stages A and B is preserved.
 The trained field defines, for a receiver with initial state $z_0$ and context $w$, two endpoints
 obtained by integrating from the \emph{same} $z_0$,
 \begin{align}
-z_{\mathrm{full}}(1) \;&=\; z_0 + \int_0^1 \bigl[\, v_{\mathrm{self}}(z(\tau), \tau) + v_{\mathrm{context}}(z(\tau), w, \tau) \,\bigr]\, d\tau , \label{eq:app-full}\\
-z_{\mathrm{self}}(1) \;&=\; z_0 + \int_0^1 v_{\mathrm{self}}(z(\tau), \tau)\, d\tau , \label{eq:app-selfend}
+z_{\mathrm{full}}(1) \;&=\; z_0 + \int_0^1 \bigl[\, v_{\mathrm{self}}(z(\tau), \tau)
+   + v_{\mathrm{context}}(z(\tau), w, \tau) \,\bigr]\, d\tau , \label{eq:app-full}\\
+z_{\mathrm{self}}(1) \;&=\; z_0 + \int_0^1 v_{\mathrm{self}}(z(\tau), \tau)\, d\tau . \label{eq:app-selfend}
 \end{align}
 where the full trajectory includes the context modulation and the self trajectory omits it, and both
 share the identical self parameters. The context residual is their difference under the semantic

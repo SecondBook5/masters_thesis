@@ -267,7 +267,13 @@ degenerate reference point and is reported for completeness. The same diagnostic
     \caption{AIS$\rightarrow$invasive edge.}
     \label{fig:app-c-transport-stability-inv}
   \end{subfigure}
-  \caption[Normalized transport-stability diagnostic by geometry, both edges]{Normalized matching-stability diagnostic $D_N$ (normalized by target variance; lower indicates that the optimal-transport coupling yields more stable barycentric targets in that regulatory subspace) across the candidate coupling geometries, resolved separately for (a)~the AAH$\rightarrow$AIS edge and (b)~the AIS$\rightarrow$invasive edge. Each bar is annotated with the feature dimension $d$ of its geometry, making the $14$-pathway-versus-$759$-transcription-factor dimensional difference explicit. This is the plotted, per-edge companion to Table~\ref{tab:app-c-dn} (which additionally reports the raw and per-feature normalizations) and is an observational identifiability/quality-control diagnostic on the coupling geometry, not an inferential result about progression: it ranks the candidate geometries by transport stability and, with the table, supports estimating transport on the pathway-plus-transcription-factor geometry and reporting the interpretable pathway effects over the pathway sub-block. $D_N$ here is a mini-batch (batch-to-batch Monte-Carlo) quantity on this cohort rather than a patient-level confidence interval.}
+  \caption[Normalized transport-stability diagnostic by geometry, both edges]{Normalized matching-stability
+  diagnostic $D_N$ (by target variance; lower = more stable barycentric targets) across candidate coupling
+  geometries, for (a)~AAH$\rightarrow$AIS and (b)~AIS$\rightarrow$invasive; each bar annotated with its
+  feature dimension $d$. This is the plotted companion to Table~\ref{tab:app-c-dn}---a quality-control
+  diagnostic on the coupling geometry, not an inferential result: it ranks geometries by stability and
+  supports estimating transport on the pathway-plus-TF geometry while reporting effects over the pathway
+  sub-block. $D_N$ is a mini-batch quantity, not a patient-level confidence interval.}
   \label{fig:app-c-transport-stability}
 \end{figure}
 
@@ -316,7 +322,13 @@ Figure~\ref{fig:app-c-credibility}. A streamplot rendering of the differential (
     \caption{AIS$\rightarrow$invasive edge.}
     \label{fig:app-c-diff-streamfield-inv}
   \end{subfigure}
-  \caption[Context-redirection streamfield, both LUAD edges]{Streamplot rendering of the context difference field $\Delta v = v_{\mathrm{full}}-v_{\mathrm{self}}$ on (a)~the AAH$\rightarrow$AIS edge and (b)~the AIS$\rightarrow$invasive edge---a second, corroborating view of the differential transport geometry shown per receiver in the main text (Fig.~\ref{fig:context_diff_field}). The per-receiver two-dimensional redirection $\Delta v$ (full-context step minus self-only step) is smoothed onto the streamplot grid and drawn as streamlines coloured and line-width-scaled by $\|\Delta v\|$ (clipped at the $95$th percentile); streamlines are thinned to hairlines where the redirection is negligible, so a genuine null region reads as an empty field. Blue points are source receivers ($\tau=0$), grey points the real target receivers, and the faint backdrop the surrounding tissue. Coherent, organized streamlines mark where local niche context bends the regulatory flow; a flat, low-magnitude field marks where it does not. Like the main-text field this is a descriptive rendering of the context component of transport, not an inferential quantity, and it is placed in the appendix to avoid duplicating the main-text illustration.}
+  \caption[Context-redirection streamfield, both LUAD edges]{Streamplot of the context difference field
+  $\Delta v = v_{\mathrm{full}}-v_{\mathrm{self}}$ on (a)~AAH$\rightarrow$AIS and (b)~AIS$\rightarrow$invasive---a
+  corroborating view of the per-receiver field in the main text (Fig.~\ref{fig:context_diff_field}). The
+  redirection is smoothed onto the grid and drawn as streamlines coloured and scaled by $\|\Delta v\|$
+  (clipped at the $95$th percentile), thinned to hairlines where negligible so a null region reads empty;
+  blue points are source receivers, grey the targets. Coherent streamlines mark where niche context bends
+  the flow. Descriptive, not inferential.}
   \label{fig:app-c-diff-streamfield}
 \end{figure}
 
@@ -429,7 +441,15 @@ shown in Figure~\ref{fig:app-c-ladder-bars}. The per-fold endpoint Sinkhorn dist
     \caption{AIS$\rightarrow$invasive edge.}
     \label{fig:app-c-endpoint-by-fold-inv}
   \end{subfigure}
-  \caption[Per-fold endpoint Sinkhorn distance, both LUAD edges]{Per-fold endpoint validation of the fitted full-context transport for (a)~the AAH$\rightarrow$AIS edge and (b)~the AIS$\rightarrow$invasive edge. For each patient-held-out fold the plot shows the Sinkhorn distance between the transported (predicted) target-stage distribution and the real target-stage distribution (lower is better), giving the global distance beside the conditional (within-niche, common-support-weighted) distance, which is the supported estimand; bars are annotated with the per-fold donor and cell counts. These are the per-fold resolutions behind the \texttt{local\_context\_full} row of the five-fold-mean ladders in Tables~\ref{tab:app-c-ladder-aah} and~\ref{tab:app-c-ladder-inv} and the mean-bar summary of Figure~\ref{fig:app-c-ladder-bars}. They expose the substantial fold-to-fold heterogeneity in endpoint distance that those means average over, which is the reason the paired local-context-versus-self-only endpoint contrast is underpowered on five folds. The figure is a per-fold stability diagnostic, not an independent test of the context effect.}
+  \caption[Per-fold endpoint Sinkhorn distance, both LUAD edges]{Per-fold endpoint validation of the
+  fitted full-context transport for (a)~AAH$\rightarrow$AIS and (b)~AIS$\rightarrow$invasive. Each
+  patient-held-out fold shows the Sinkhorn distance between predicted and real target distributions
+  (lower better), global beside conditional (within-niche, common-support-weighted, the supported
+  estimand); bars annotated with per-fold donor and cell counts. These resolve the
+  \texttt{local\_context\_full} row of the mean ladders (Tables~\ref{tab:app-c-ladder-aah},
+  \ref{tab:app-c-ladder-inv}) and expose the fold-to-fold heterogeneity those means average over---why
+  the paired context-versus-self contrast is underpowered on five folds. A stability diagnostic, not an
+  independent test.}
   \label{fig:app-c-endpoint-by-fold}
 \end{figure}
 
@@ -454,6 +474,7 @@ shown in Figure~\ref{fig:app-c-ladder-bars}. The per-fold endpoint Sinkhorn dist
   ordered by mean.}
   \label{tab:app-c-ladder-aah}
   \footnotesize
+  \resizebox{\textwidth}{!}{%
   \begin{tabular}{lcccccc}
     \toprule
     Ladder rung & Fold 0 & Fold 1 & Fold 2 & Fold 3 & Fold 4 & Mean \\
@@ -474,7 +495,7 @@ shown in Figure~\ref{fig:app-c-ladder-bars}. The per-fold endpoint Sinkhorn dist
     neural\_residuals\_only & 654.55 & 693.56 & 571.26 & 805.72 & 548.93 & 654.81 \\
     structured\_only & 2435.72 & 2655.21 & 2822.41 & 3185.60 & 2007.17 & 2621.22 \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
 
 \begin{table}[htbp]
@@ -484,6 +505,7 @@ shown in Figure~\ref{fig:app-c-ladder-bars}. The per-fold endpoint Sinkhorn dist
   ordered by mean.}
   \label{tab:app-c-ladder-inv}
   \footnotesize
+  \resizebox{\textwidth}{!}{%
   \begin{tabular}{lcccccc}
     \toprule
     Ladder rung & Fold 0 & Fold 1 & Fold 2 & Fold 3 & Fold 4 & Mean \\
@@ -504,7 +526,7 @@ shown in Figure~\ref{fig:app-c-ladder-bars}. The per-fold endpoint Sinkhorn dist
     neural\_residuals\_only & 913.42 & 912.21 & 858.28 & 794.37 & 747.29 & 845.11 \\
     structured\_only & 3041.00 & 2271.35 & 2993.02 & 2514.49 & 2725.79 & 2709.13 \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
 
 % =====================================================================
@@ -538,7 +560,14 @@ $R_{\mathrm{cond}}$ spectrum across all $773$ programs is shown in Figure~\ref{f
     \caption{AIS$\rightarrow$invasive edge.}
     \label{fig:app-c-re-violin-inv}
   \end{subfigure}
-  \caption[Per-receiver $R_{\mathrm{cond}}$ distribution, PROGENy pathways, both edges]{Distribution of the per-held-out-receiver conditional-transport effect $R_{\mathrm{cond}}$ for the $14$ PROGENy pathway programs on (a)~the AAH$\rightarrow$AIS edge and (b)~the AIS$\rightarrow$invasive edge, drawn as horizontal violins with jittered points and a narrow box over all out-of-fold receivers, ordered by $|\text{median}|$ and coloured by cross-fold stability class; the dashed line marks no context effect ($R_{\mathrm{cond}}=0$). This is the distributional complement to the point-plus-confidence-interval forest of the main text (Fig.~\ref{fig:forest}) and to the all-$773$-program spectrum (Fig.~\ref{fig:app-c-spectrum}): a stable pathway appears as a tight violin displaced from zero, whereas an unstable one straddles zero. The stable, context-upregulated p53, WNT, and TRAIL pathways at the preinvasive edge, and the sustained-WNT/TRAIL with suppressed-VEGF pattern at the invasion edge, are visible as violins offset from zero, while the remaining pathways centre on it.}
+  \caption[Per-receiver $R_{\mathrm{cond}}$ distribution, PROGENy pathways, both edges]{Per-receiver
+  $R_{\mathrm{cond}}$ for the $14$ PROGENy pathways on (a)~AAH$\rightarrow$AIS and
+  (b)~AIS$\rightarrow$invasive, as horizontal violins over all out-of-fold receivers, ordered by
+  $|\text{median}|$ and coloured by stability class (dashed line = no effect). Distributional complement
+  to the main-text forest (Fig.~\ref{fig:forest}): a stable pathway is a tight violin displaced from
+  zero, an unstable one straddles it. The context-upregulated p53/WNT/TRAIL at the preinvasive edge and
+  the sustained-WNT/TRAIL, suppressed-VEGF pattern at invasion show as offset violins; the rest centre on
+  zero.}
   \label{fig:app-c-re-violin}
 \end{figure}
 
@@ -744,7 +773,7 @@ per LUAD edge; all numbers derive from the completed full-cohort run
   programs are stable (STA) or directionally-stable (DIR) context-driven programs from the per-program
   analysis.}
   \label{tab:app-c-comm-chains}
-  \footnotesize
+  \resizebox{\textwidth}{!}{%
   \begin{tabular}{llllrcr}
     \toprule
     Sender & Ligand & Receptor & Program & $R_{\mathrm{cond}}$ & Class & Score \\
@@ -764,7 +793,7 @@ per LUAD edge; all numbers derive from the completed full-cohort run
     NAF\_perineurial & DCN & EGFR & HDAC1 & $-0.204$ & DIR & 0.411 \\
     Fibro\_alveolar & DCN & EGFR & HDAC1 & $-0.204$ & DIR & 0.397 \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
 
 At the tissue scale, the differential communication network (AIS versus AAH) reorganizes around a
