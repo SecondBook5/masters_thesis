@@ -33,12 +33,11 @@ spatial niche-association analysis (C.12), the invasion-edge supplement (C.13), 
 
 The primary cohort is the LUAD progression series (single-nucleus RNA, GEO accession GSE308103),
 spanning five morphological stages, paired with matched spatial transcriptomics of the same
-specimens. Cell-type reference transfer uses the Lung Cancer Atlas (LuCA, disease-aware, primary)
+specimens(GEO accession GSE307534). Cell-type reference transfer uses the Lung Cancer Atlas (LuCA, disease-aware, primary)
 and the Human Lung Cell Atlas (HLCA, ablation reference). The transferability probe is a graded
 pancreatic intraepithelial neoplasia (PanIN) Visium series (GEO accession GSE254829, seven slides)
 decoded against the PDAC single-nucleus atlas (GEO accession GSE202051).
-\todo{Confirm the GEO accession and platform for the LUAD \emph{spatial} arm; only the snRNA
-accession (GSE308103) is verifiable from the pipeline configuration.}
+
 
 Table~\ref{tab:app-c-inventory} gives the per-stage donor and epithelial-receiver counts. Donor
 coverage per stage is 23 Normal, 10 AAH, 12 AIS, 4 MIA, and 25 LUAD.
@@ -329,10 +328,18 @@ AIS\_invasive equivalent into the thesis \texttt{figures/} directory and insert 
 two-panel figure; the files are not yet present in the template figure directory, so no
 \texttt{\textbackslash includegraphics} is emitted (kept compilable).}
 
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/fig_waddington_landscape.png}
+  \caption[Progression potential over the AAH and AIS epithelial clouds]{A $-\log$ density potential over the combined AAH and AIS epithelial clouds, with real integrated regulatory trajectories overlaid. The surface is an empirical $-\log$ density landscape, not a computed free energy; trajectories are integrated from the estimated regulatory transport operator.}
+  \label{fig:waddington}
+\end{figure}
+
 % =====================================================================
 \section{Complete falsification ladders}\label{sec:app-c-ladder}
 
-The main text (Section~\ref{sec:ladder}) reports the load-bearing rungs of the falsification ladder.
+The main text (Section~\ref{sec:results-ladder}) reports the load-bearing rungs of the falsification ladder.
 Tables~\ref{tab:app-c-ladder-aah} and~\ref{tab:app-c-ladder-inv} give the complete per-fold semantic
 Sinkhorn distances (lower is better) for every rung on the two LUAD edges, ordered by five-fold mean.
 The full ladder adds the linear self-only and self-plus-context baselines
@@ -501,6 +508,14 @@ $R_{\mathrm{cond}}$ spectrum across all $773$ programs is shown in Figure~\ref{f
   tf\_GLI3 & $-0.129$ & $-0.134$ & $-0.124$ \\
   tf\_ZBTB18 & $-0.140$ & $-0.167$ & $-0.114$ \\
 \end{longtable}
+
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.75\textwidth]{figures/ude_result/self_only_AAH_AIS_roc.pdf}
+  \caption[Self-only baseline ROC, AAH vs AIS]{Per-fold receiver-operating-characteristic curves for a self-only classifier of AAH versus AIS on intrinsic epithelial regulatory state, under \emph{donor}-held-out cross-validation (mean AUC $0.419 \pm 0.110$; per-fold $0.27$--$0.61$; 89{,}172 epithelial cells, 18 donors, 773 regulatory features). The mean is approximately $1.6$ standard errors below $0.5$, i.e.\ at chance out of sample, indicating that intrinsic regulatory state does not transfer across patients; see the text for the pooled and within-donor comparisons that localize this to a donor-entangled representation. This cross-patient instability motivates the patient-held-out evaluation used throughout.}
+  \label{fig:self-only-roc}
+\end{figure}
 
 % =====================================================================
 \section{Spatial niche-association}\label{sec:app-c-niche}
@@ -684,6 +699,35 @@ chains above are the subset that terminate on model-identified context-driven pr
   \label{fig:app-c-comm-circos}
 \end{figure}
 
+\paragraph{Differential network curvature.}
+Ollivier--Ricci curvature $\kappa$ was computed on the weighted differential communication network for
+each edge, following the construction of Section~\ref{sec:comm}; a negative curvature marks an edge
+through which signaling mass is funneled (a structural bottleneck), and the per-channel difference
+$\Delta\kappa = \kappa_{\text{target}} - \kappa_{\text{source}}$ quantifies bottleneck emergence across
+the stage transition. On the AAH$\rightarrow$AIS edge, $1{,}588$ of $2{,}415$ channels ($66\%$) become
+more bottlenecked at AIS (mean $\Delta\kappa = +0.089$; note the positive mean reflects a heavy right
+tail of a few strongly reinforced channels against many mildly bottlenecked ones). The strongest
+emerging bottlenecks are SMG-mucous$\rightarrow$$\gamma\delta$T ($\Delta\kappa=-0.49$),
+myoepithelial$\rightarrow$NK-CD11d ($-0.28$), and a cluster of innate-lymphoid-cell channels
+(ILC$\rightarrow$neuroendocrine $-0.26$, ILC$\rightarrow$SMG-duct $-0.24$, ILC$\rightarrow$secretory
+$-0.24$); the most reinforced are muscle-smooth-airway$\rightarrow$SMG-mucous ($+3.19$) and
+neuroendocrine$\rightarrow$SMG-mucous ($+2.72$), placing the submucosal-gland-mucous population at the
+center of the reorganization (Figure~\ref{fig:ricci_diff}, main text). On the AIS$\rightarrow$invasive
+edge the reorganization is more balanced ($1{,}366$ of $3{,}003$ channels, $45\%$, more bottlenecked;
+mean $\Delta\kappa=+0.135$), and the emerging bottlenecks shift toward a stromal/fibroblast convergence
+(NKT$\rightarrow$Schwann $-0.28$, and multiple $\rightarrow$perichondrial-fibroblast channels: ciliated
+$-0.27$, CD4-effector $-0.23$, CD8-EM $-0.23$). These curvature summaries are descriptive properties of
+the LIANA differential network and are not $R_{\mathrm{cond}}$-gated; they characterize how the
+communication topology---independent of the estimand---reorganizes across each transition.
+
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/fig_niche_module_heatmap.png}
+  \caption[Niche $\times$ regulatory-module conditional transport]{Conditional transport $R_{\text{cond}}$ for curated regulatory modules across the three niche strata (ordered from low to high CAF/immune density). Modules move only weakly across strata relative to a within-donor permutation null, consistent with the coarse-ecology reading: regulatory redirection tracks the stage-level stratum rather than a niche-identity-specific gate at the current spatial resolution.}
+  \label{fig:niche_heatmap}
+\end{figure}
+
 % =====================================================================
 \section{Invasion-edge supplement}\label{sec:app-c-invasion}
 
@@ -743,6 +787,46 @@ with FOXA1 ($+0.192$), ATF5 ($+0.182$), and NFKB2 ($+0.145$), against context-do
   tf\_CTBP1 & $-0.202$ & $-0.217$ & $-0.190$ \\
   pathway\_VEGF & $-0.318$ & $-0.374$ & $-0.229$ \\
 \end{longtable}
+
+% =====================================================================
+\section{Co-expression and regulon corroboration}\label{sec:app-c-grn}
+
+Section~\ref{sec:grn} reports the directional concordance between the
+$R_{\mathrm{cond}}$ signature and two de-novo analyses of the same expression
+matrix, together with the finding that the transcription-factor overlap is not
+enriched beyond hypergeometric expectation. The four supporting panels are
+collected here rather than in the main text, because the analyses are
+cross-method consistency checks on shared data rather than independent
+measurements, and their figure weight in the main text would overstate that
+status.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figures/grn/module_umap_pub_AAH_AIS.png}
+  \caption[hdWGCNA co-expression module architecture, AAH$\rightarrow$AIS]{Co-expression module architecture on the AAH$\rightarrow$AIS edge \autocite{Morabito2023-yq}. Genes are embedded on the topological-overlap matrix and colored by module (SM1--SM7); hub genes are ringed and labeled. Modules recover interpretable cell-lineage identities---mast (SM1, MS4A2), T/lymphoid (SM2, ITGAL), alveolar epithelial (SM3, NKX2-1), endothelial (SM4, EGFL7), myeloid (SM6, MS4A7), fibroblast (SM7, COL6A1)---derived purely from co-expression, independent of the CRRT-UDE estimand.}
+  \label{fig:module_umap}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figures/grn/module_enrichment_AAH_AIS.png}
+  \caption[GO-BP enrichment of co-expression modules, AAH$\rightarrow$AIS]{Gene Ontology (Biological Process) enrichment of the hdWGCNA co-expression modules on the AAH$\rightarrow$AIS edge \autocite{Korotkevich2016-ou}. Pathways are grouped by module (colored rail); the $x$-axis is the normalized enrichment score, dot area is gene-set size, and dot color is $-\log_{10}$ adjusted $P$. Terms clearing an adjusted $P<0.05$ are ringed. The vascular/endothelial SM4 module is enriched for regulation of cell migration and TGF$\beta$/MAPK response.}
+  \label{fig:module_enrichment}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figures/scenic/scenic_rss_vs_rcond_AAH_AIS.png}
+  \caption[Regulon specificity versus context effect, AAH$\rightarrow$AIS]{Each transcription-factor regulon plotted by its stage specificity (regulon specificity score, $x$) against its model context effect ($R_{\text{cond}}$, $y$; mean over folds), colored by $R_{\text{cond}}$ stability. This directly relates the descriptive SCENIC layer to the CRRT-UDE estimand: regulons in the upper-right are both AIS-specific markers and context-upregulated (FOS, ETS2, NF$\kappa$B family), whereas the lower-right marks stage-specific but context-suppressed regulons (IRF9).}
+  \label{fig:rss_vs_rcond}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figures/scenic/scenic_cell_clustermap_AAH_AIS.png}
+  \caption[Per-cell regulon-activity clustermap, AAH$\rightarrow$AIS]{Per-cell AUCell regulon-activity clustermap on the AAH$\rightarrow$AIS edge \autocite{Aibar2017-kq}. Rows are individual epithelial cells (hierarchically clustered), columns are the top stage-specific regulons, and color is the $Z$-scored regulon activity. Row-color bars annotate each cell by stage, donor, and dominant cell type, exposing per-patient and per-stage structure. An NF$\kappa$B/STAT/IRF-high inflammatory cell block is visible, consistent with the JAK-STAT and interferon axes identified by $R_{\text{cond}}$.}
+  \label{fig:scenic_clustermap}
+\end{figure}
 
 % =====================================================================
 \section{PanIN supplement}\label{sec:app-c-panin}
@@ -838,3 +922,74 @@ HPC \texttt{conda list} / lock file and pin them here for a byte-reproducible ma
 \todo{Record the git commit hash of the \texttt{crrt-ude} repository at which the
 \texttt{v2lowrank\_source} results were produced (working-tree HEAD at analysis time was on branch
 \texttt{ude-core}), so the manifest ties the numbers in this appendix to an exact revision.}
+
+\subsection*{Secondary-analysis parameters}
+
+Chapter~\ref{chap:methods} Section~\ref{sec:methods-biological-analyses} states
+what each secondary analysis asks and how its evidential status relates to the
+estimand. The settings that reproduce them are collected here.
+
+\begin{table}[htbp]
+\centering
+\caption[Secondary-analysis tool settings]{Tool settings for the secondary
+biological analyses of Section~\ref{sec:methods-biological-analyses}. All were
+run after model fitting and none altered the receiver representation, the
+transport coupling, the differential field, or the definition of
+$R_{\mathrm{cond}}$.}
+\label{tab:app-c-tools}
+\small
+\begin{tabular}{p{0.20\textwidth}p{0.22\textwidth}p{0.50\textwidth}}
+\toprule
+Analysis & Tool & Settings \\
+\midrule
+Stage differential expression & scanpy
+  \texttt{rank\_genes\_groups} & Wilcoxon; target stage as comparison group,
+  source as reference; signed statistic, log-fold change, nominal and adjusted
+  $P$ retained \\
+\addlinespace
+Gene-set enrichment & decoupleR / fgsea & MSigDB Hallmark and GO Biological
+  Process; gene sets with fewer than five ranked genes excluded;
+  false-discovery-rate adjustment as returned by the implementation \\
+\addlinespace
+Stage discrimination & scikit-learn
+  \texttt{LogisticRegression} & PROGENy $+$ CollecTRI features only; features
+  standardized on training donors; stage-stratified donor-held-out folds, fold
+  count limited by the smaller stage-specific donor count; pooled and
+  within-donor variants as sensitivity comparisons \\
+\addlinespace
+Residual localization & scipy \texttt{spearmanr} & Spearman $\rho$ between
+  stratum order and per-receiver $R_{\mathrm{cond}}$; $2{,}000$ within-donor
+  permutations of stratum labels; two-sided empirical $P$ \\
+\addlinespace
+Spatial autocorrelation & squidpy
+  \texttt{spatial\_neighbors}, \texttt{spatial\_autocorr} & generic coordinate
+  type, $k=15$ nearest neighbours, graph built independently per section;
+  Moran's $I$ and Getis--Ord $G_i^{\ast}$, hot spots at standardized
+  $G_i^{\ast}>1.96$ and cold spots below $-1.96$; section-level Spearman,
+  Kruskal--Wallis, and two-sided Mann--Whitney $U$ across stages \\
+\addlinespace
+Projected dynamics & PHATE (primary), UMAP, PCA & velocities from the first
+  displacement of a multistep RK4 trajectory, projected into the shared
+  embedding and smoothed on a regular grid; spectral Helmholtz--Hodge
+  decomposition; rotational fraction as the rotational-component norm over the
+  full projected-field norm \\
+\addlinespace
+Regulon inference & pySCENIC & GRNBoost2 co-expression on raw epithelial
+  counts; cisTarget motif pruning; AUCell per-nucleus activity; overlap with
+  $R_{\mathrm{cond}}$ transcription factors by upper-tail hypergeometric test on
+  a universe restricted to factors present in both \\
+\addlinespace
+Co-expression modules & hdWGCNA & metacells within compatible donor, stage, and
+  cell-type groups; topological-overlap matrix from the selected
+  soft-thresholding power; hierarchical clustering with dynamic tree cutting;
+  modules merged on eigengene correlation; hub genes by intramodular
+  connectivity and eigengene membership \\
+\addlinespace
+Communication & LIANA, OmniPath, CollecTRI & LIANA consensus per stage;
+  receptor-to-transcription-factor paths from OmniPath directed interactions;
+  chains retained only where the terminal program is stable or directionally
+  stable with $|R_{\mathrm{cond}}|\geq0.05$; Ollivier--Ricci curvature for
+  bottleneck ranking, exploratory \\
+\bottomrule
+\end{tabular}
+\end{table}

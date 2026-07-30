@@ -1,186 +1,451 @@
 % !TeX root = ./00-main.tex
 % ============================================================================
-% Chapter 1 -- Introduction
-% DRAFT scaffold (2026-07-28) for AJ to edit into final voice.
-% - This is the citation-heavy chapter. Every (placeholder) marks a claim that
-%   needs a real reference; resolve via Zotero -> \autocite{}. A consolidated
-%   list of what each placeholder needs is in the comment block at the file end.
-% - V1 (prior StageBridge formulation) motivation lives in section 1.7, framed as
-%   method development, NOT as a result. No unverified V1 numbers are stated.
-% - No template machinery touched.
+% Chapter 1 -- Introduction  [FINAL, trimmed pass]
+%
+% Cuts applied throughout: removed restated clauses (sentences that repeat the
+% preceding sentence's claim in different words), dead lead-ins to citations
+% ("Recent studies have begun to..."), and redundant scene-setting ahead of
+% concrete evidence. No claims, citations, or hedges were removed -- only
+% wording. Section-by-section rationale was reviewed with the author before
+% reassembly; see prior turn for the paragraph-by-paragraph diff and reasoning.
+%
+% ONE STRUCTURAL NOTE NOT YET ACTED ON: the Kiemen2026-dz "tens of microns"
+% resolution fact is now made in Sec 1.1 para 4 (as neighbor evidence), Sec 1.2
+% para 3 (as the core resolution argument), and echoed in Sec 1.3's closing
+% paragraph. That's three appearances of one fact. Left as-is pending your call
+% on whether to state it once and cross-reference, or keep the repetition
+% because each occurrence serves a different local argument.
 % ============================================================================
 
-\chapter{Introduction} \label{chap:intro}
+\chapter{Introduction}
+\label{chap:intro}
 
-\section{Premalignancy is a tissue-level process}
-\label{sec:intro-tissue}
+\section{Premalignant progression is a tissue process}
+\label{sec:intro-premalignancy}
 
-Cancer does not begin at the moment of invasion. It is preceded by a sequence of premalignant
-lesions in which epithelial cells acquire progression-associated regulatory and genomic changes while
-still confined to their tissue of origin (premalignancy-review). In the lung, this sequence runs from
-histologically normal epithelium through atypical adenomatous hyperplasia (AAH) and adenocarcinoma in
-situ (AIS) to minimally invasive and frankly invasive adenocarcinoma (LUAD) (luad-precursor-path).
-These lesions are not merely smaller tumors; they are qualitatively distinct tissue states, and the
-central clinical problem they pose is that only a fraction progress, while current histology cannot
-reliably distinguish those that will (precursor-risk). A mechanistic account of what pushes a
-premalignant epithelial cell toward invasion---and what can be read from a single biopsy---would
-change how these lesions are managed.
+Two recent mechanistic studies show epithelial and microenvironmental states
+evolving together with explicit direction and feedback, rather than as parallel
+change. In mouse lung, \emph{KRAS}-mutant alveolar type II cells secrete
+amphiregulin, activate EGFR signaling in adjacent fibroblasts, and induce a
+fibrotic injury-like program; the reprogrammed fibroblasts then alter alveolar
+macrophage state and reinforce epithelial plasticity, and disrupting the
+circuit prevents tumor initiation \autocite{Cardoso2026-kp}. In mouse pancreas,
+oncogenic and tumor-suppressive programs converge within a progenitor-like
+population at the benign-to-malignant transition; suppressing p53 in that
+population permits its expansion, epithelial--mesenchymal reprogramming, and
+formation of an immune-privileged niche \autocite{Reyes2026-yr}. In both
+systems the epithelium does not simply prompt stromal change and receive it
+back passively: it constructs a microenvironment that then acts back on the
+epithelial state that built it.
 
-A recurring theme in modern cancer biology is that this push is not cell-intrinsic alone. Progression
-is shaped by the tissue ecosystem the epithelial cell inhabits: the inflammatory, stromal, and
-vascular compartments that surround it and remodel across the precursor sequence (tme-review). This
-motivates a host-versus-intrinsic framing that runs throughout this dissertation---an epithelial cell's
-fate reflects both its own regulatory state and the physiologic state of the tissue around it, and
-separating these two contributions is a prerequisite for understanding, and eventually predicting,
-progression.
+Lung adenocarcinoma provides the primary system for this thesis. Its
+recognized precursor sequence extends from atypical adenomatous hyperplasia
+(AAH) through adenocarcinoma in situ (AIS) and minimally invasive
+adenocarcinoma to invasive disease, and multiregion, single-cell, spatial,
+genomic, and epigenomic studies document coordinated remodeling of epithelial,
+immune, stromal, and vascular compartments across it
+\autocite{Sinjab2021-in,Zhu2022-hz,Haga2023-xc,Chen2025-zo}. \emph{KRT8}-positive
+alveolar intermediate states define a plastic epithelial axis associated with
+injury, regeneration, and early transformation \autocite{Wang2023-hg}, and
+ablating a high-plasticity state in early neoplasia prevents the
+benign-to-malignant transition \autocite{Chan2026-ov}. In the spatial
+multi-omics cohort analyzed here, alveolar progenitor-like states localize
+within proinflammatory niches enriched for \emph{IL1B}-high macrophages; these
+niches are prevalent in precursor lesions, become less frequent in established
+adenocarcinoma, promote progenitor growth, and can be reduced by inflammatory
+intervention \autocite{Peng2025-xu} --- a stage-specific distribution that
+places the niche within early progression rather than as a consequence of
+established cancer.
 
-\section{Lung and pancreatic precursor systems}
-\label{sec:intro-systems}
+Pancreatic intraepithelial neoplasia provides a complementary ductal precursor
+system with substantially different tissue ecology. PanINs are widespread,
+multifocal, and genetically heterogeneous in grossly normal adult pancreata,
+yet only a minority give rise to invasive disease
+\autocite{Braxton2024-sv,Kiemen2024-xk}. Their progression occurs within a
+fibroblast-rich, spatially organized environment marked by ductal remodeling,
+acinar disruption, local inflammation, immune reorganization, and stromal
+restructuring \autocite{Carpenter2023-qs,Bell2024-kn,Lyman2025-qg,Kiemen2026-dz},
+with fibroblast state, inflammatory signaling, and immune architecture
+changing across PanIN grade and progression toward pancreatic ductal
+adenocarcinoma \autocite{Bell2024-kn,Lyman2025-qg}. Where LUAD is organized
+around epithelial--macrophage inflammatory niches, PanIN progression is
+organized more strongly around fibroblast, matrix, and lesion-associated
+immune remodeling --- a stringent test of whether a context-effect framework
+transfers across distinct precursor ecologies rather than recovering one
+tissue-specific architecture.
 
-Two premalignant systems anchor this work. The primary system is the lung adenocarcinoma precursor
-sequence, for which matched single-nucleus, spatial, and exome profiling of AAH, AIS, and invasive
-lesions is now available (peng-luad; kadara-field). This cohort is unusually well suited to the
-question because it spans an ordered, histologically defined progression series with paired molecular
-and spatial data on the same specimens. Prior work in this system has implicated proinflammatory niches
-and progenitor-like epithelial states in early progression (peng-luad), providing biological anchors
-against which model-derived findings can be checked.
+PanIN also reveals a consequential separation between epithelial and
+ecological progression. In donor pancreata, PanIN epithelial cells already
+show substantial transcriptional similarity to malignant epithelial cells,
+while their surrounding fibroblast and macrophage states remain distinct from
+those of pancreatic cancer \autocite{Carpenter2023-qs}. Spatial analyses extend
+this by placing the PanIN epithelial compartment on a continuum with invasive
+cancer while its microenvironment stays sharply separated and reorganizes only
+with malignant progression \autocite{Elhossiny2026-pq}; failure to acquire a
+cancer-permissive stromal state has been proposed as one reason most PanINs
+remain indolent \autocite{Elhossiny2026-pq}. If progression depends on such a
+state emerging, the relevant ecological information may reside not in an
+epithelial receiver's immediate neighborhood but in a broader lesion- or
+specimen-level field. Distinguishing receiver-local context from
+specimen-scale ecology is therefore not a modeling decision but a biological
+question about the spatial organization of premalignant progression.
 
-The secondary system is the pancreatic intraepithelial neoplasia (PanIN) sequence, a graded
-low-to-high-grade precursor series in pancreatic ductal adenocarcinoma (panin-review). PanIN serves
-here as a cross-disease transferability and calibration probe rather than a second discovery cohort:
-it tests whether a method developed on lung precursors behaves sensibly when applied to a different
-tissue with a much smaller number of profiled donors.
 
-\section{Single-cell and spatial profiling of premalignant tissue}
-\label{sec:intro-profiling}
+\section{What spatial omics measures, and what it does not}
+\label{sec:intro-measurement}
 
-Single-cell and single-nucleus RNA sequencing resolve the epithelial and microenvironmental cell
-states present in premalignant tissue but discard spatial organization in the process of dissociation
-(scrnaseq-review). Spatial transcriptomics, and in particular spot-based platforms such as 10x Visium,
-restore tissue coordinates but at a resolution coarser than a single cell, so that each measured spot
-mixes several cells (visium). Neither modality alone provides what a study of niche effects requires:
-epithelial regulatory state, the composition of the surrounding niche, and the spatial relationship
-between them. Integrating them---deconvolving spatial spots against a single-cell reference to recover
-cell-type composition and decoded expression---is therefore a necessary preprocessing step
-(destvi; deconvolution-review), and one whose adequacy must be checked rather than assumed.
+Single-cell and single-nucleus RNA sequencing resolve epithelial and
+microenvironmental states at high molecular resolution; spatial
+transcriptomics situates those states within tissue architecture. Together
+they supply the three components context-associated progression requires: a
+regulatory representation of the epithelial receiver, a representation of its
+surrounding tissue, and an ordered pathological axis along which state change
+can be inferred. They do not measure the transition connecting these
+components directly; it must be reconstructed from the structure of the data.
 
-A further difficulty is intrinsic to the data rather than the assay. Premalignant cohorts are
-cross-sectional: each specimen is a snapshot of one stage, not a time course of one cell. Any account
-of progression from such data is therefore an inference about the direction of state change aligned
-with pathological stage, not an observation of a trajectory, and the analysis must be explicit about
-that distinction (pseudotime-caveats).
+The first constraint is spatial resolution. Spot-based spatial
+transcriptomics aggregates expression across multicellular regions, so it
+does not directly observe a single epithelial cell together with a uniquely
+defined microenvironment. Reference mapping and deconvolution instead
+estimate the cellular composition and continuous cell-state structure
+contributing to each measurement, using methods such as cell2location,
+Tangram, RCTD, TACCO, and DestVI
+\autocite{Kleshchevnikov2022-ki,Biancalani2021-bt,Cable2022-tb,Mages2023-wj,Lopez2022-ps}.
+The resulting representation depends jointly on the reference population, its
+annotation granularity, the mapping model's assumptions, and the platform's
+physical resolution --- choices that determine which epithelial states can
+serve as receivers and which ecological features can be assigned to their
+surroundings, and so define the model's biological state space rather than a
+neutral preprocessing layer.
 
-\section{Optimal transport and neural differential equations for cell-state dynamics}
-\label{sec:intro-ot}
+This limitation is biologically consequential because tissue ecology varies
+across spatial scales. Cellular-resolution three-dimensional histology of more
+than one thousand human pancreatic precancers reveals marked heterogeneity in
+perilesional inflammation, with immune hot and cold spots alternating over
+tens of microns \autocite{Kiemen2026-dz}. Spot-based platforms integrate
+expression over an effective length scale of tens to roughly one hundred
+microns, so spatial variation below that scale is not directly observed ---
+and reference-based inference can estimate a spot's cellular constituents but
+cannot reconstruct subspot organization that was never measured. Any context
+representation derived from these data therefore inherits a resolution
+boundary that added model complexity cannot remove.
 
-Recovering direction-of-change from unpaired cross-sectional populations is the problem optimal
-transport (OT) was built for: given cells at a source stage and cells at a target stage, OT constructs
-the most economical coupling between them and thereby a map of how the population moves (ot-singlecell).
-Entropic-regularized OT makes this computationally tractable at cohort scale through the Sinkhorn
-iteration (cuturi-sinkhorn), and conditional formulations of OT allow the coupling to be constrained
-to comparable subpopulations rather than matching arbitrary cells (bunne-cot; manupriya-cot). In
-parallel, neural ordinary differential equations and flow-matching methods learn continuous velocity
-fields that transport one distribution into another (neural-ode; flow-matching), and optimal-transport
-conditional flow matching combines the two, learning a field whose trajectories respect an OT coupling
-\autocite{Lipman2022-ns}. These tools make it possible to model progression as a learned dynamical flow through a
-molecular state space rather than as a static comparison of stages.
+The second constraint is temporal. Premalignant spatial cohorts are
+cross-sectional because profiling consumes the tissue: successive stages are
+represented by different cells, lesions, and patients, producing
+stage-indexed population distributions rather than longitudinal trajectories
+of individual cells. No receiver is observed both before and after
+progression. The transition between stages must instead be inferred through a
+correspondence model relating unpaired source and target populations
+\autocite{Bunne2024-pl,Weinreb2018-jq} --- a model-based quantity, not an
+empirical path recovered from repeated measurement, whose interpretation
+depends on the molecular representation, the assumed transition geometry, and
+the structure imposed on correspondence. The objective of this thesis follows
+from these two constraints: not merely to fit stage-associated variation, but
+to determine which components of an inferred transition remain identifiable
+under explicit falsification.
 
-\section{Spatially resolved and niche-aware methods}
-\label{sec:intro-spatial}
+\section{The unresolved estimand}
+\label{sec:intro-gap}
 
-A growing family of methods incorporates spatial context into single-cell analysis: neighborhood-based
-representations that summarize each cell's surroundings \autocite{Singhal2024-rv}, niche and cellular-community detection
-(niche-methods), and cell--cell communication inference from ligand--receptor co-expression
-(liana; cellcell-review). These methods characterize where cell states co-occur and which signaling
-channels are available, but they generally describe association rather than isolate a
-context-attributable component of a dynamical process, and they rarely test whether the spatial
-information they use is resolved at the scale they assume. The gap this dissertation addresses lies
-precisely there---between describing spatial context and quantifying its specific, scale-resolved
-contribution to progression.
+Spatial transcriptomics has generated a rapidly expanding methodological
+literature for characterizing the organization of tissue ecosystems.
+Neighborhood and niche-detection methods identify recurrent cellular
+configurations and spatially organized tissue states; latent-space approaches
+resolve location-specific molecular variation associated with
+tumor--microenvironment interactions \autocite{Deshpande2023-zw}; and
+neighborhood-augmented representations such as BANKSY incorporate local
+molecular context directly into the representation of each spatial
+observation \autocite{Singhal2024-rv}. In parallel, optimal transport and
+flow-matching methods align molecular populations across conditions and
+estimate the transition fields connecting them
+\autocite{Cuturi2013-li,Schiebinger2019-lm,Lipman2022-ns,Klein2025-sr,Richter2026-ib}.
 
-\section{Structured and universal differential equations}
-\label{sec:intro-ude}
+These methodological families resolve complementary aspects of tissue
+organization but leave a specific quantity undefined. Spatial niche methods
+identify where particular cellular configurations occur and which molecular
+programs are associated with them. Transport methods estimate how populations
+are related across stages or conditions. Neither, by itself, estimates the
+context-associated component of progression for a fixed epithelial receiver:
+the difference in its predicted transition when tissue context is included,
+after holding its initial regulatory state and pathological stage edge
+constant. Nor do these approaches determine whether such a quantity is
+identifiable from cross-sectional spatial measurements.
 
-Purely neural dynamical models are flexible but opaque: a black-box velocity field can reconstruct a
-transition without exposing which biological programs drive it. Universal differential equations (UDEs)
-address this by combining mechanistic, interpretable structure with neural residual terms, so that a
-model can be both expressive and readable (ude-rackauckas). For a study whose goal is to attribute
-progression to specific regulatory programs, this structure is essential: the interpretable terms carry
-the biological claim, and the residuals absorb what the structure cannot express, with a diagnostic to
-report how much of each is doing the work. Casting regulatory state in terms of curated pathway and
-transcription-factor activities (progeny; collectri; decoupler) gives the structured terms a biological
-vocabulary, so that a fitted field can be read as a statement about named programs rather than abstract
-latent dimensions.
+This distinction introduces three inferential failure modes. First, spatial
+enrichment does not imply an effect on transition: a niche may become more
+prevalent at a later stage because its constituent cell states expand
+together, even if it contributes no information about how an individual
+receiver changes. Second, improved prediction after adding neighborhood
+features does not establish that neighborhood \emph{identity} is informative
+--- a context-conditioned model may outperform a self-only one simply from
+additional features, parameters, or specimen-level ecology correlated with
+stage. Third, the correspondence used to define the transition can absorb the
+ecological signal before the context effect is estimated: if source--target
+matching is itself determined by the context features under evaluation, the
+resulting estimate cannot distinguish context-associated displacement from
+context-conditioned correspondence.
 
-\section{The unresolved estimand, and the motivation from a prior formulation}
+A defensible context-effect analysis must address all three problems
+simultaneously. It requires an explicitly defined within-receiver estimand, a
+correspondence model constructed so that the effect of interest is not
+encoded upstream, and a falsification test that destroys receiver--context
+correspondence while preserving the marginal ecological structure supplied to
+the model. The decisive comparison is therefore not simply between a model
+with context and a model without it. It is between the observed context
+assignment and an appropriately matched context assignment whose distribution
+is retained but whose receiver identity has been removed.
+
+The same logic makes spatial scale part of the estimand rather than an
+implementation detail. A model supplied with receiver-local context can
+exploit information carried by the immediate neighborhood, by a broader
+tissue region, or by specimen-level ecological composition without
+distinguishing among them. Neighborhood-scale conditioning is therefore a
+hypothesis about where progression-relevant information resides, not a
+property guaranteed by the input representation. This assumption is placed
+under tension by the sub-spot ecological variation already noted in
+Section~\ref{sec:intro-measurement} and by evidence that
+progression-permissive stromal states may emerge as lesion- or
+specimen-level fields \autocite{Elhossiny2026-pq}. Whether the recoverable
+signal is receiver-specific, specimen-scale, or inaccessible below the
+resolution of the platform is consequently an empirical question. Resolving
+it requires a framework capable not only of detecting an apparent context
+effect, but also of concluding that receiver-local context carries no
+identifiable information beyond the ecological distribution from which it
+was drawn.
+
+\section{Correspondence and dynamics from cross-sectional populations}
+\label{sec:intro-dynamics}
+
+Relating stage-indexed populations requires a model of correspondence between
+unpaired molecular distributions. Pseudotime estimates relative ordering
+within an observed state manifold, and RNA velocity estimates short-horizon
+direction from transcriptional kinetics; neither addresses the case in which
+source and target populations arise from different tissue sections, lesions,
+and patients \autocite{Richter2026-ib,Weinreb2018-jq}.
+
+Optimal transport supplies a principled framework for that case. A transport
+coupling assigns probability mass between source and target states under a
+specified transition geometry, and entropic regularization makes estimation
+tractable in high-dimensional molecular data \autocite{Cuturi2013-li}.
+Waddington-OT established the framework for destructive single-cell time
+courses, and subsequent work extended it across complete temporal series
+\autocite{Schiebinger2019-lm,Lavenant2023-qv}. The resulting coupling depends
+on the molecular representation, the transport cost, the regularization, and
+the marginal structure --- choices that determine which earlier states are
+associated with which later states, and which therefore require
+justification rather than default settings.
+
+Continuous dynamical models convert discrete correspondences into fields of
+state change. Neural ordinary differential equations parameterize a state
+derivative through a learned vector field \autocite{Chen_undated-rf}; flow
+matching estimates such fields directly from interpolated source--target
+pairs \autocite{Tong2020-ou,Huguet2022-pz,Lipman2022-ns}. Optimal-transport
+conditional flow matching combines the two, using a transport coupling to
+define training pairs and a continuous field to connect their distributions
+\autocite{Klein2025-sr,Richter2026-ib} --- so pathological stage becomes an
+ordered coordinate along which population-level regulatory states transform.
+
+Spatial conditioning has begun to enter this setting. NicheFlow models the
+evolution of structured cellular microenvironments across spatial time
+courses, and MIOFlow~2.0 conditions cellular trajectories on neighbourhood
+composition and intercellular signalling \autocite{Sakalyan2025-ia,Sun2026-xk}.
+What such conditioning introduces, and what the present work takes as its
+central concern, is a question of scale: context may describe an ecological
+state shared across an entire specimen, a regional tissue configuration, or
+the immediate neighbourhood of an individual receiver, and a predictive model
+can exploit any of these without distinguishing among them. Specimen-level
+ecology, receiver-local context, and donor composition are three different
+sources of progression-associated information, and separating them is a
+design requirement rather than a post-hoc analysis.
+
+\section{StageBridge and the conditional context residual}
 \label{sec:intro-estimand}
 
-Bringing these threads together exposes the estimand that this dissertation targets and that prior
-approaches leave implicit. An initial formulation of the StageBridge approach established that
-premalignant progression is learnable: a niche-conditioned transition model, in which each epithelial
-receiver's atlas-derived state and a receiver-centered set encoding of its spatial neighborhood were
-combined and transported between adjacent stages by optimal-transport conditional flow matching,
-reconstructed progression-associated transitions, and reduced variants that removed the niche or the
-gating that mixed state and context reconstructed them less well---evidence that context carried useful
-predictive information. That formulation, however, combined epithelial state and niche context within a
-single gated predictor and operated in a broad latent state space. It therefore could not answer the
-question that actually matters biologically: what portion of the prediction is specifically attributable
-to context rather than to the cell's own state, and whether the useful context is resolved at the scale
-of the individual cell's neighborhood or only at the coarser scale of the specimen. Predictive accuracy
-and causal-style attribution are different targets, and a model optimized for the former does not
-deliver the latter.
+StageBridge estimates progression-aligned regulatory transport from
+separately encoded representations of epithelial receiver state and tissue
+context. Each focal epithelial receiver is represented by its regulatory
+state, while ecological information enters the dynamical model through a
+dedicated context branch. This architectural separation allows intrinsic
+epithelial state, specimen-level ecology, and receiver-local context to be
+evaluated as distinct sources of progression-associated information.
 
-The unresolved quantity is therefore a \emph{conditional context residual}: the additional
-progression-aligned regulatory displacement of an epithelial cell that is attributable to its local
-tissue context, after accounting for the displacement already predicted by its intrinsic state, and
-estimated only among ecologically comparable cells so that the comparison is not confounded by state.
-Defining this quantity, establishing when it can be identified from cross-sectional spatial data, and
-measuring it in real premalignant cohorts is the problem this dissertation sets out to solve.
+The central estimand is defined by contrasting two trajectories initialized
+from the same epithelial receiver. Integrating the fitted dynamical field
+with the context branch active produces one endpoint; integrating from the
+same initial state with the context branch inactive produces another. Their
+difference defines the conditional context residual,
+
+\begin{equation}
+R_{\mathrm{cond},i}
+=
+z_i^{\mathrm{full}}(1)
+-
+z_i^{\mathrm{self}}(1),
+\label{eq:intro-context-residual}
+\end{equation}
+
+where $z_i^{\mathrm{full}}(1)$ and $z_i^{\mathrm{self}}(1)$ denote the
+endpoints reached from the same initial receiver state under the full and
+self-only dynamics, respectively. Because the two trajectories share the same
+initial condition, stage edge, and fitted model parameters, the residual is a
+within-receiver contrast rather than a comparison between independently
+fitted models. It quantifies the endpoint shift associated with activating
+the fitted context branch while holding the receiver's starting regulatory
+state fixed. Chapter~\ref{chap:methods} specifies the estimand formally, and
+Appendix~\ref{chap:appendix-b} provides its derivation.
+
+The interpretation of this residual depends on three design choices. First,
+the dynamics are evaluated in a named regulatory space composed of curated
+pathway and transcription-factor activities rather than in an unconstrained
+latent embedding. Conditional residuals can therefore be reported as signed,
+program-resolved quantities; PROGENy and decoupleR provide the corresponding
+regulatory coordinates \autocite{Schubert2018-ph,Badia-I-Mompel2022-te}.
+Second, the progression field is parameterized as a structured universal
+differential equation that combines specified regulatory terms with a
+flexible learned residual component \autocite{Rackauckas2020-mc,Philipps2025-jl}.
+This construction preserves the distinction between the explicitly modeled
+and learned contributions to the field and permits their relative magnitudes
+to be quantified. Third, source--target correspondence is estimated within
+coarse ecological strata rather than optimized directly on the full
+receiver-local context. The transport coupling therefore constrains
+plausible correspondences without encoding, upstream, the same ecological
+information whose downstream contribution the model is intended to estimate.
+
+The evaluation framework is designed to distinguish predictive fit from
+identifiability. Donor-held-out prediction, specimen-average context
+substitution, matched context shuffling, architectural ablation, and a
+frozen synthetic recovery benchmark jointly test whether an estimated context
+association generalizes, the spatial scale at which its information is
+carried, and whether the estimator recovers a known effect under controlled
+conditions. The decisive comparison is between the observed
+receiver--context assignment and a matched assignment whose context identity
+has been destroyed but whose marginal ecological structure is preserved ---
+the only contrast that can separate receiver-specific information from added
+model capacity and the ecological distribution the context was drawn from.
 
 \section{Objective and hypotheses}
 \label{sec:intro-objective}
 
-The objective of this dissertation is to define, validate, and apply a conditional context-residual
-estimand for premalignant epithelial progression---to determine whether local tissue context alters
-epithelial regulatory transport beyond intrinsic state, through which regulatory programs, and at what
-spatial scale. The methodological realization of this objective is StageBridge, a structured universal
-differential equation that decomposes progression velocity into an intrinsic field and a niche-gated
-context field, with the context residual $R_{\text{cond}}$ as its primary estimand; its full
-specification is given in Chapter~\ref{chap:methods}. Where the prior formulation combined state and
-context in a single predictor, this decomposition makes their separation explicit; and the validation
-here is adversarial rather than confirmatory: the transport coupling that defines the estimand is
-selected against a synthetic benchmark with known ground truth, and an initial state-neutral coupling
-that failed that benchmark was discarded before any real data were analyzed.
+The objective of this thesis is to determine whether tissue context contains
+information about progression-aligned epithelial regulatory transport beyond
+that contained in the initial epithelial state, to identify the spatial scale
+at which any such information is recoverable, and to resolve the regulatory
+programs through which it is expressed. Lung adenocarcinoma precursors
+provide the primary system for model development and biological discovery.
+Pancreatic intraepithelial neoplasia provides a secondary evaluation of
+estimator behavior and transferability within a biologically distinct
+precursor ecology.
 
-Three pre-specified, falsifiable hypotheses organize the analysis, stated formally in
-Chapter~\ref{chap:methods} (Section~\ref{sec:hypotheses}) and tested in Chapter~\ref{chap:results}. The
-\emph{central hypothesis} is that local cell-state context explains a reproducible component of
-regulatory transport beyond intrinsic state---that a non-zero, patient-robust context residual exists
-for some regulatory programs. The \emph{local-context hypothesis} asks the stronger question of whether
-that contextual information is genuinely receiver-local, outperforming a coarser specimen-level ecology
-and a matched shuffle. The \emph{cross-disease hypothesis} asks
-whether the estimator behaves correctly under transfer to a much smaller pancreatic precursor
-cohort---returning patient-robust programs only where the data support them, and a calibrated null
-otherwise---rather than requiring that specific lung programs recur.
+Three hypotheses were stated conceptually here and formalized in
+Chapter~\ref{chap:methods}, Section~\ref{sec:hypotheses}. Chapter~\ref{chap:results}
+evaluates each hypothesis against its prespecified criterion.
 
-Chapter~\ref{chap:methods} develops the model, estimand, coupling, and identifiability benchmark;
-Chapter~\ref{chap:results} tests the three hypotheses; and Chapter~\ref{chap:discussion} interprets
-them and their limits. The intended contribution is neither an unqualified positive effect nor a bare
-negative, but a prespecified context-residual estimand together with a characterized recovery
-boundary---a statement of what local tissue context contributes to premalignant progression, through
-which programs, and at the spatial scale the available data can and cannot resolve.
+\paragraph{Hypothesis 1: a reproducible conditional context residual exists.}
+After conditioning on the epithelial receiver state and ordered pathological
+transition, tissue context is associated with a reproducible, program-resolved
+component of progression-aligned regulatory displacement. The corresponding
+prediction is that specific named regulatory programs exhibit conditional
+context residuals whose direction and magnitude remain stable across
+donor-held-out resampling.
+
+\paragraph{Hypothesis 2: progression-associated context information is
+receiver-local.}
+The spatial context assigned to an individual epithelial receiver contains
+progression-associated information beyond both specimen-level ecology and the
+receiver's intrinsic regulatory state. The corresponding prediction is that a
+model supplied with each receiver's observed local context will predict the
+target-stage distribution more accurately than models supplied with
+specimen-average context, no context, or matched context whose
+receiver-specific correspondence has been disrupted while its marginal
+distribution is preserved. The final comparison constitutes the stringent
+test: failure to distinguish observed from shuffled context would indicate
+that receiver identity contributes no detectable endpoint-predictive
+information beyond the ecological distribution from which the context was
+sampled.
+
+\paragraph{Hypothesis 3: the estimand exhibits transferable behavior across
+precursor systems.}
+When applied without modification to a biologically distinct precursor
+epithelium, the same estimand should produce a coherent result rather than an
+artifact of the primary cohort. It should identify interpretable regulatory
+programs where the secondary cohort supports stable estimation and return no
+stable programs where it does not. This analysis tests the behavior and
+portability of the estimator; it does not constitute independent validation
+of the primary lung findings, and its interpretation is bounded by the size
+and structure of the secondary cohort.
+
+The hypotheses address related but non-equivalent properties of the
+framework: the reproducibility of the estimated residual, the spatial
+localization of the information it captures, and the behavior of the
+estimand across biological systems. The thesis is organized around their
+separate evaluation rather than presuming that all three resolve
+concordantly.
+
+\section{Organization of the thesis}
+\label{sec:intro-organization}
+
+Chapter~\ref{chap:methods} defines the biological cohorts and analysis units;
+constructs the epithelial receiver and tissue-context representations;
+specifies the conditional-stratified transport coupling, structured dynamical
+model, and conditional context residual; and formalizes the evaluation
+framework and hypothesis criteria.
+
+Chapter~\ref{chap:results} presents the empirical analysis in four parts. It
+first evaluates whether the estimand is recoverable and whether its behavior
+is an artifact of the regulatory representation. It then characterizes the
+program-resolved residuals identified across the two lung progression edges,
+examines estimator behavior in pancreatic intraepithelial neoplasia, and
+compares the inferred programs with complementary analyses of the same
+biological systems. The chapter next determines whether the recoverable
+ecological information is carried by receiver-local context or by broader
+specimen-level structure. It concludes by resolving each prespecified
+hypothesis against the resulting inferential boundary.
+
+Chapter~\ref{chap:discussion} integrates the biological and methodological
+findings. It interprets the regulatory programs nominated by the conditional
+residual, develops the spatial-scale result as the central inferential
+contribution, defines the limitations imposed by cross-sectional sampling and
+platform resolution, and identifies the experimental and computational
+developments required to distinguish local signaling effects from broader
+ecological organization.
+
+Appendix~\ref{chap:appendix-a} derives entropic optimal transport and the
+Sinkhorn iteration. Appendix~\ref{chap:appendix-b} derives the dynamical
+training objective and conditional context residual and provides the
+complete training procedure. Appendix~\ref{chap:appendix-c} contains the
+dataset inventory, regulatory feature definitions, fold assignments,
+hyperparameters, complete falsification ladders, program-stability atlas,
+supplementary analyses, and reproducibility manifest.
+
 
 % ============================================================================
-% CITATION PLACEHOLDERS TO RESOLVE (swap for \autocite{}; grouped by section):
-% 1.1: (premalignancy-review) (luad-precursor-path) (precursor-risk) (tme-review)
-% 1.2: (peng-luad) (kadara-field) (panin-review)
-% 1.3: (scrnaseq-review) (visium) (destvi) (deconvolution-review) (pseudotime-caveats)
-% 1.4: (ot-singlecell) (cuturi-sinkhorn) (bunne-cot) (manupriya-cot) (neural-ode)
-%      (flow-matching) \autocite{Lipman2022-ns}
-% 1.5: \autocite{Singhal2024-rv} (niche-methods) (liana) (cellcell-review)
-% 1.6: (ude-rackauckas) (progeny) (collectri) (decoupler)
-% 1.7: prior StageBridge formulation = AJ's own earlier work -> cite as prior work /
-%      self-citation or "previously described" per committee preference; NO invented numbers.
-% NOTE: the stub's placeholder \cite{dirac}/\Blindtext were removed. All refs above
-%       are text placeholders, not real keys.
+% CITATION KEYS USED IN THIS CHAPTER
+%
+% Verified present in the LUAD/PanIN .bib exports:
+%   Braxton2024-sv  Kiemen2024-xk   Teixeira2019-yb  Mazzilli2025-hi
+%   Pedro2025-kz    Anderson2026-zg Cardoso2026-kp   Reyes2026-yr
+%   Kadara2016-dt   Sinjab2021-in   Haga2023-xc      Chen2025-zo
+%   Wang2023-hg     Chan2026-ov     Peng2025-xu      Bell2024-kn
+%   Lyman2025-qg    Kiemen2026-dz   Elhossiny2026-pq
+%
+% Carried over from the previous Ch1 draft (confirm these resolve):
+%   Kleshchevnikov2022-ki  Biancalani2021-bt  Cable2022-tb   Mages2023-wj
+%   Lopez2022-ps           Bunne2024-pl       Weinreb2018-jq Richter2026-ib
+%   Cuturi2013-li          Schiebinger2019-lm Lavenant2023-qv Chen_undated-rf
+%   Tong2020-ou            Huguet2022-pz      Lipman2022-ns  Klein2025-sr
+%   Singhal2024-rv         Deshpande2023-zw   Sakalyan2025-ia Sun2026-xk
+%   Schubert2018-ph        Badia-I-Mompel2022-te Rackauckas2020-mc
+%   Philipps2025-jl        Carpenter2023-qs
+%
+% (NEEDS KEY) -- Sec 1.3 cites the niche-detection literature generically. The
+% claim is stronger with specific references. Add and cite:
+%   - NicheCompass / niche quantification        (Birk et al., Nat Genet 2025)
+%   - COVET/ENVI, covariance environment          (Haviv et al., Nat Biotech 2025)
+%   - Niche-DE, niche differential expression     (Mason et al. 2023)
+%   - single-cell niche identification            (Qian et al., Nat Commun 2025)
+% These four are in the thesis proposal bibliography but were not in the two
+% .bib exports; pull them into the main library.
+%
+% NOTE: \autocite{Chen_undated-rf} has an "undated" key -- fix the entry.
 % ============================================================================

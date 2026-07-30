@@ -7,7 +7,7 @@
 %% + anchor) and crrt/ude/estimand.py. VOICE: numbered equations, every symbol defined, plain-word claim.
 
 This appendix derives the StageBridge training objective and shows why the context residual
-$R_{\mathrm{cond}}$ of Chapter~\ref{chap:methods} (Equation~\ref{eq:rcond}) is a valid within-receiver
+$R_{\mathrm{cond}}$ of Chapter~\ref{chap:methods} (Equation~\ref{eq:methods-rcond-identity}) is a valid within-receiver
 measure of the effect of local context on progression. The argument has three parts: flow matching
 against an optimal-transport coupling recovers the displacement field between the source and target
 regulatory distributions; the three-stage schedule identifies the self and context components of that
@@ -44,10 +44,11 @@ $\Pi^{\star}$. In words: regressing the field onto straight-line displacements o
 recovers the average velocity that carries the source distribution onto the target distribution, so the
 learned $v$ integrates source cells to the target-stage regulatory distribution. Because $\Pi^{\star}$
 is computed only from regulatory-state distance within a coarse niche stratum
-(Equation~\ref{eq:coupling}), the supervision carries no fine-context information, and the context
+(Equation~\ref{eq:methods-entropic-coupling}), the supervision carries no fine-context information, and the context
 dependence of $v$ is learned rather than imposed by the pairing.
 
 \section{The structured decomposition and its estimation}
+\label{sec:app-b-decomposition}
 
 StageBridge does not fit an unstructured $v$. It writes the field as a receiver-intrinsic term plus a
 context term,
@@ -56,7 +57,7 @@ v(z, w, \tau) \;=\; \underbrace{v_{\mathrm{self}}(z, \tau)}_{\text{no }w}
 \;+\; \underbrace{v_{\mathrm{context}}(z, w, \tau)}_{\text{vanishes when context is inert}} ,
 \end{equation}
 with $v_{\mathrm{self}}$ and $v_{\mathrm{context}}$ as defined in
-Equations~\ref{eq:vself}--\ref{eq:vcontext}. This decomposition is identifiable only if the two terms
+Equations~\ref{eq:methods-self-field} and~\ref{eq:methods-context-field}. This decomposition is identifiable only if the two terms
 are estimated so that $v_{\mathrm{self}}$ captures the progression that occurs independent of context
 and $v_{\mathrm{context}}$ captures only the residual that context adds. A single joint fit does not
 guarantee this: the flexible context term could absorb intrinsic progression, or the self term could
@@ -134,8 +135,750 @@ sparsity term encourages sparse context effects,
 where $z_{\mathrm{int}}(1)$ is the integrated endpoint of the source batch, $d_{\mathrm{Sinkhorn}}$ is
 the entropic transport distance of Appendix~\ref{chap:appendix-a}, $\mu_1$ is the target-stage
 population, $\Theta_{c}$ are the context-field parameters, $\mathbf{1}[\cdot]$ is the indicator that the
-anchor is active only in Stage C, and $(\lambda_e, \lambda_r, \lambda_s) = (0.25,\, 0.01,\, 10^{-4})$
-are the fixed loss weights. The flow-matching term supplies the primary supervision of the velocity
+anchor is active only in Stage C, and $(\lambda_e, \lambda_r, \lambda_s, \lambda_a) = (0.25,\, 0.01,\, 10^{-4},\, 0.1)$
+are the fixed loss weights, matching Equation~\ref{eq:methods-training-loss-weights}. The flow-matching term supplies the primary supervision of the velocity
 field; the endpoint term corrects accumulated integration error at $\tau=1$; and the residual and
 sparsity terms enforce that the context contribution is a small, sparse residual on top of the intrinsic
 progression, matching the interpretation of $R_{\mathrm{cond}}$ as a residual effect.
+
+\section{Three-stage training procedure in full}
+\label{sec:app-b-training-detail}
+
+Section~\ref{sec:methods-training} states the three-stage schedule
+(Table~\ref{tab:training-schedule}), the composite Stage~C objective
+(Equation~\ref{appb-eq:methods-stage-c-objective}), and the evaluated loss
+coefficients (Equation~\ref{appb-eq:methods-training-loss-weights}); the
+identification argument for the schedule is given in
+Section~\ref{sec:app-b-decomposition} above. This section gives the remaining
+implementation in full: the construction of each flow-matching training
+example, the per-stage objective forms, each auxiliary term, and the numerical
+integration scheme. It is included for reproduction of the fitted models.
+Notation follows Chapter~\ref{chap:methods} throughout and no quantity is
+redefined here.
+
+The conditional-stratified transport procedure identifies probabilistic pairs
+of source- and target-stage receivers. The StageBridge differential model
+defines a velocity at any regulatory state located between those two stage
+distributions. Conditional flow matching connects these components by training
+the model velocity to follow the direction implied by each transport-sampled
+source--target pair \autocite{Lipman2022-ns,Bunne2022-go}.
+
+Flow matching converts endpoint observations into local velocity-supervision
+examples. For a paired source state and target state, a point is sampled along
+the straight line connecting them. The model is evaluated at that intermediate
+point and trained to predict the displacement from the source state to the
+target state. Repeating this procedure across transport-sampled pairs and
+progression coordinates produces a continuous vector field whose integrated
+trajectories connect the source and target populations.
+
+Training was performed independently within each donor-held-out
+cross-validation fold. Receiver states, ecological strata, transport
+couplings, and model parameters used for fitting were constructed exclusively
+from the training donors assigned to that fold.
+
+\subsection{Flow-matching training examples}
+\label{appb-sec:methods-cfm-paths}
+
+Each optimization step began with the conditional-stratified transport plan
+described in Section~\ref{sec:methods-entropic-ot}. From this plan,
+\(B=64\) source--target pairs were sampled. Let
+\(\nu\in\{1,\ldots,B\}\) index one of these sampled pairs, and let
+\((i_\nu,j_\nu)\) denote its source and target receiver indices. Thus,
+\(i_\nu\in\mathcal{S}\) identifies a source-stage receiver and
+\(j_\nu\in\mathcal{T}\) identifies its transport-sampled target-stage
+receiver.
+
+For each pair, a progression coordinate was sampled independently:
+
+\begin{equation}
+\tau_\nu
+\sim
+\operatorname{Uniform}(0,1).
+\label{appb-eq:methods-cfm-time-sampling}
+\end{equation}
+
+Here, \(\operatorname{Uniform}(0,1)\) is the continuous uniform distribution
+on the interval from \(0\) to \(1\). Every value in this interval therefore
+has equal sampling density. The scalar \(\tau_\nu\) specifies the position at
+which the model is evaluated along the progression path for pair \(\nu\).
+
+The intermediate regulatory state was constructed by linear interpolation:
+
+\begin{equation}
+\widetilde{z}_\nu
+=
+\left(1-\tau_\nu\right)
+z_{i_\nu}^{\mathrm{obs}}
++
+\tau_\nu
+z_{j_\nu}^{\mathrm{obs}}.
+\label{appb-eq:methods-cfm-path}
+\end{equation}
+
+The vector
+\(\widetilde{z}_\nu\in\mathbb{R}^{d_z}\) is the interpolated regulatory state
+used as the input to the differential field. At \(\tau_\nu=0\), it equals the
+observed source state \(z_{i_\nu}^{\mathrm{obs}}\). At \(\tau_\nu=1\), it
+equals the observed target state \(z_{j_\nu}^{\mathrm{obs}}\). Intermediate
+values form a straight path between the two states in the
+\(d_z\)-dimensional regulatory space.
+
+Because Equation~\ref{appb-eq:methods-cfm-path} is linear in \(\tau_\nu\), its
+derivative with respect to the progression coordinate is constant:
+
+\begin{equation}
+u_\nu
+=
+\frac{d\widetilde{z}_\nu}{d\tau_\nu}
+=
+z_{j_\nu}^{\mathrm{obs}}
+-
+z_{i_\nu}^{\mathrm{obs}}.
+\label{appb-eq:methods-cfm-target}
+\end{equation}
+
+The vector \(u_\nu\in\mathbb{R}^{d_z}\) is the target velocity for training
+pair \(\nu\). Each coordinate of \(u_\nu\) gives the change in one pathway or
+transcription-factor activity between the paired source and target states.
+The target is identical to the transport-paired displacement
+\(\Delta z_{i_\nu j_\nu}\) defined in
+Equation~\ref{eq:methods-pair-displacement}.
+
+The ecological input was held at the observed source value throughout the
+training path:
+
+\begin{equation}
+\widetilde{w}_\nu(\tau)
+=
+w_{i_\nu},
+\qquad
+\tau\in[0,1].
+\label{appb-eq:methods-cfm-source-context}
+\end{equation}
+
+Here, \(\widetilde{w}_\nu(\tau)\) denotes the context supplied to the model
+for training pair \(\nu\) at progression coordinate \(\tau\).
+Equation~\ref{appb-eq:methods-cfm-source-context} states that this input remains
+equal to the observed source context \(w_{i_\nu}\) across the complete
+interval. The same source-fixed convention was used for pointwise training,
+endpoint integration, and calculation of the conditional context residual.
+
+\subsection{Velocity-matching loss}
+\label{appb-sec:methods-cfm-loss}
+
+For a predicted velocity \(\widehat{u}_\nu\in\mathbb{R}^{d_z}\), the
+flow-matching error for pair \(\nu\) is the squared Euclidean distance between
+the predicted and target velocities. Averaging this error across the \(B\)
+sampled pairs and \(d_z\) regulatory coordinates gives
+
+\begin{equation}
+\mathcal{L}_{\mathrm{CFM}}
+=
+\frac{1}{B d_z}
+\sum_{\nu=1}^{B}
+\left\|
+\widehat{u}_\nu-u_\nu
+\right\|_2^2.
+\label{appb-eq:methods-general-cfm-loss}
+\end{equation}
+
+Here, \(\mathcal{L}_{\mathrm{CFM}}\) is the conditional flow-matching loss,
+\(\|\cdot\|_2\) is the Euclidean norm, and
+\(\widehat{u}_\nu\) is the velocity predicted by the field used in the current
+training stage. Division by \(B d_z\) expresses the loss as the mean squared
+error per pair and regulatory coordinate. Minimizing this quantity aligns the
+modeled local velocity with the displacement implied by the
+transport-sampled pair.
+
+StageBridge used three sequential training stages so that the receiver-state
+and context-conditioned contributions were established separately before
+joint refinement. Let \(\theta_s\) denote all trainable parameters of
+\(v_{\mathrm{self}}\), and let \(\theta_c\) denote all trainable parameters of
+\(v_{\mathrm{context}}\).
+
+\subsection{Receiver-state field fitting}
+\label{appb-sec:methods-training-stage-a}
+
+Stage A fitted the receiver-state field. For pair \(\nu\), the predicted
+velocity was
+
+\begin{equation}
+\widehat{u}_\nu^{(\mathrm{A})}
+=
+v_{\mathrm{self}}
+\left(
+\widetilde{z}_\nu,
+\tau_\nu;
+\theta_s
+\right),
+\label{appb-eq:methods-stage-a-prediction}
+\end{equation}
+
+where the superscript \(\mathrm{A}\) identifies Stage A and the semicolon
+separates the field inputs from its trainable parameters. The self field
+receives the interpolated receiver state and progression coordinate and
+receives no ecological-context vector.
+
+Substitution into
+Equation~\ref{appb-eq:methods-general-cfm-loss} gives the Stage A flow-matching
+loss:
+
+\begin{equation}
+\mathcal{L}_{\mathrm{CFM}}^{(\mathrm{A})}
+=
+\frac{1}{B d_z}
+\sum_{\nu=1}^{B}
+\left\|
+v_{\mathrm{self}}
+\left(
+\widetilde{z}_\nu,
+\tau_\nu;
+\theta_s
+\right)
+-
+u_\nu
+\right\|_2^2.
+\label{appb-eq:methods-stage-a-cfm}
+\end{equation}
+
+Stage A therefore estimated the portion of transport-aligned velocity
+predictable from epithelial regulatory state and relative progression
+position. Its training pairs remained restricted to the coarse ecological
+common-support domain established by the conditional coupling.
+
+At the end of Stage A, the fitted self-field parameters were stored as
+\(\theta_s^{(\mathrm{A})}\). The resulting field was
+
+\begin{equation}
+\widehat{v}_{\mathrm{self}}^{(\mathrm{A})}(z,\tau)
+=
+v_{\mathrm{self}}
+\left(
+z,\tau;
+\theta_s^{(\mathrm{A})}
+\right).
+\label{appb-eq:methods-stage-a-field}
+\end{equation}
+
+The notation
+\(\widehat{v}_{\mathrm{self}}^{(\mathrm{A})}\) denotes the self field after
+completion of Stage A. This stored field served as the fixed receiver-state
+component in Stage B and as the reference solution for the Stage C anchor.
+
+\subsection{Context-field fitting}
+\label{appb-sec:methods-training-stage-b}
+
+Stage B fixed the self-field parameters at
+\(\theta_s^{(\mathrm{A})}\) and optimized the context-field parameters
+\(\theta_c\). The full velocity predicted for pair \(\nu\) was
+
+\begin{equation}
+\widehat{u}_\nu^{(\mathrm{B})}
+=
+\widehat{v}_{\mathrm{self}}^{(\mathrm{A})}
+\left(
+\widetilde{z}_\nu,
+\tau_\nu
+\right)
++
+v_{\mathrm{context}}
+\left(
+\widetilde{z}_\nu,
+w_{i_\nu},
+\tau_\nu;
+\theta_c
+\right).
+\label{appb-eq:methods-stage-b-prediction}
+\end{equation}
+
+The first term is the frozen Stage A self-field prediction. The second term is
+the context-associated velocity predicted from the interpolated state,
+observed source context, and progression coordinate.
+
+The Stage B flow-matching loss was
+
+\begin{equation}
+\mathcal{L}_{\mathrm{CFM}}^{(\mathrm{B})}
+=
+\frac{1}{B d_z}
+\sum_{\nu=1}^{B}
+\left\|
+\widehat{u}_\nu^{(\mathrm{B})}
+-
+u_\nu
+\right\|_2^2.
+\label{appb-eq:methods-stage-b-cfm}
+\end{equation}
+
+Because the self field is fixed during this stage, minimizing
+Equation~\ref{appb-eq:methods-stage-b-cfm} fits the context field to the velocity
+remaining after the Stage A prediction. This remaining velocity can be written
+explicitly as
+
+\begin{equation}
+u_\nu^{\mathrm{res}}
+=
+u_\nu
+-
+\widehat{v}_{\mathrm{self}}^{(\mathrm{A})}
+\left(
+\widetilde{z}_\nu,
+\tau_\nu
+\right),
+\label{appb-eq:methods-stage-b-residual-target}
+\end{equation}
+
+where \(u_\nu^{\mathrm{res}}\in\mathbb{R}^{d_z}\) is the residual velocity
+target for pair \(\nu\). Stage B therefore estimates the context-field
+contribution required to supplement the fitted receiver-state field.
+
+\subsection{Anchored joint refinement}
+\label{appb-sec:methods-training-stage-c}
+
+Stage C allowed the parameters of both fields to update jointly. The predicted
+velocity was
+
+\begin{equation}
+\widehat{u}_\nu^{(\mathrm{C})}
+=
+v_{\mathrm{self}}
+\left(
+\widetilde{z}_\nu,
+\tau_\nu;
+\theta_s
+\right)
++
+v_{\mathrm{context}}
+\left(
+\widetilde{z}_\nu,
+w_{i_\nu},
+\tau_\nu;
+\theta_c
+\right).
+\label{appb-eq:methods-stage-c-prediction}
+\end{equation}
+
+The Stage C flow-matching loss was
+
+\begin{equation}
+\mathcal{L}_{\mathrm{CFM}}^{(\mathrm{C})}
+=
+\frac{1}{B d_z}
+\sum_{\nu=1}^{B}
+\left\|
+\widehat{u}_\nu^{(\mathrm{C})}
+-
+u_\nu
+\right\|_2^2.
+\label{appb-eq:methods-stage-c-cfm}
+\end{equation}
+
+Joint optimization permits coordinated adjustment of the two fields. An
+anchor penalty limits displacement of the self-field parameters from their
+Stage A values. Let \(P_s\) be the number of scalar parameters in
+\(\theta_s\), and let \(\theta_{s,p}\) denote scalar self-field parameter
+\(p\). The anchor penalty was
+
+\begin{equation}
+\mathcal{L}_{\mathrm{anchor}}
+=
+\frac{1}{P_s}
+\sum_{p=1}^{P_s}
+\left(
+\theta_{s,p}
+-
+\theta_{s,p}^{(\mathrm{A})}
+\right)^2.
+\label{appb-eq:methods-stage-c-anchor}
+\end{equation}
+
+Here, \(\theta_{s,p}^{(\mathrm{A})}\) is the stored value of parameter \(p\)
+at the end of Stage A. Dividing by \(P_s\) gives the mean squared parameter
+change and prevents the nominal anchor strength from increasing automatically
+with model size. The anchor retains the Stage A receiver-state field as the
+reference decomposition while permitting limited joint refinement.
+
+\subsection{Endpoint population loss}
+\label{appb-sec:methods-endpoint-loss}
+
+Flow matching supervises velocity at sampled intermediate states. StageBridge
+also compared the population of integrated endpoints with the sampled
+target-state population.
+
+For training stage
+\(\kappa\in\{\mathrm{A},\mathrm{B},\mathrm{C}\}\), let
+\(\widehat{z}_{\nu,1}^{(\kappa)}\) denote the endpoint obtained by integrating
+the field used in stage \(\kappa\) from source state
+\(z_{i_\nu}^{\mathrm{obs}}\) at \(\tau=0\) to \(\tau=1\). The matrix of
+predicted endpoints was
+
+\begin{equation}
+\widehat{Z}_1^{(\kappa)}
+=
+\begin{bmatrix}
+\left(\widehat{z}_{1,1}^{(\kappa)}\right)^{\mathsf T}\\
+\vdots\\
+\left(\widehat{z}_{B,1}^{(\kappa)}\right)^{\mathsf T}
+\end{bmatrix}
+\in
+\mathbb{R}^{B\times d_z}.
+\label{appb-eq:methods-predicted-endpoint-matrix}
+\end{equation}
+
+Here, each row contains one predicted regulatory endpoint. Stage A endpoints
+were generated with the self field. Stage B endpoints were generated with the
+frozen self field plus the trainable context field. Stage C endpoints were
+generated with the jointly refined full field.
+
+The corresponding sampled target-state matrix was
+
+\begin{equation}
+Z_{\mathrm{tgt}}
+=
+\begin{bmatrix}
+\left(z_{j_1}^{\mathrm{obs}}\right)^{\mathsf T}\\
+\vdots\\
+\left(z_{j_B}^{\mathrm{obs}}\right)^{\mathsf T}
+\end{bmatrix}
+\in
+\mathbb{R}^{B\times d_z}.
+\label{appb-eq:methods-training-target-matrix}
+\end{equation}
+
+The endpoint loss was
+
+\begin{equation}
+\mathcal{L}_{\mathrm{endpoint}}^{(\kappa)}
+=
+\operatorname{Sinkhorn}_{\varepsilon}
+\left(
+\widehat{Z}_1^{(\kappa)},
+Z_{\mathrm{tgt}}
+\right).
+\label{appb-eq:methods-endpoint-loss}
+\end{equation}
+
+The function
+\(\operatorname{Sinkhorn}_{\varepsilon}(X,Y)\) is the entropically
+regularized optimal-transport discrepancy between the empirical point sets
+\(X\) and \(Y\), using uniform weights and squared Euclidean distance in
+regulatory space. It measures how closely the distribution of predicted
+endpoints matches the distribution of sampled target states. This comparison
+is population-level: it allows transport mass to be distributed across the
+endpoint and target sets instead of requiring every integrated source to end
+exactly at its sampled target partner. The endpoint calculation used
+\(\varepsilon=0.05\) and \(80\) Sinkhorn iterations, matching the transport
+configuration used for pair construction.
+
+\subsection{Context-field regularization}
+\label{appb-sec:methods-context-regularization}
+
+Two penalties regulated the magnitude and parameterization of the context
+field. The first penalized the mean squared context velocity:
+
+\begin{equation}
+\mathcal{L}_{\mathrm{residual}}
+=
+\frac{1}{B d_z}
+\sum_{\nu=1}^{B}
+\left\|
+v_{\mathrm{context}}
+\left(
+\widetilde{z}_\nu,
+w_{i_\nu},
+\tau_\nu;
+\theta_c
+\right)
+\right\|_2^2.
+\label{appb-eq:methods-context-residual-penalty}
+\end{equation}
+
+This term favors a context field whose contribution remains small unless a
+larger context-associated velocity improves agreement with the transport
+targets. It was active during Stages B and C, when the full field was used.
+
+The second penalty acted on the context-field parameters. Let \(P_c\) be the
+number of scalar parameters in \(\theta_c\), and let \(\theta_{c,p}\) denote
+context-field parameter \(p\). The sparsity penalty was
+
+\begin{equation}
+\mathcal{L}_{\mathrm{sparse}}
+=
+\frac{1}{P_c}
+\sum_{p=1}^{P_c}
+\left|
+\theta_{c,p}
+\right|.
+\label{appb-eq:methods-context-sparsity}
+\end{equation}
+
+This is the mean absolute parameter magnitude, equivalent to a
+parameter-normalized \(L_1\) penalty. It favors context-field parameterizations
+containing more values near zero. The penalty was included throughout the
+three-stage schedule. During Stage A, it regularized the inactive context
+branch while the self field supplied the velocity prediction.
+
+\subsection{Stage-specific objectives}
+\label{appb-sec:methods-stage-objectives}
+
+The complete objective differed across the three stages. Stage A minimized
+
+\begin{equation}
+\mathcal{L}^{(\mathrm{A})}
+=
+\mathcal{L}_{\mathrm{CFM}}^{(\mathrm{A})}
++
+\lambda_{\mathrm{endpoint}}
+\mathcal{L}_{\mathrm{endpoint}}^{(\mathrm{A})}
++
+\lambda_{\mathrm{sparse}}
+\mathcal{L}_{\mathrm{sparse}}.
+\label{appb-eq:methods-stage-a-objective}
+\end{equation}
+
+Stage B minimized
+
+\begin{equation}
+\mathcal{L}^{(\mathrm{B})}
+=
+\mathcal{L}_{\mathrm{CFM}}^{(\mathrm{B})}
++
+\lambda_{\mathrm{endpoint}}
+\mathcal{L}_{\mathrm{endpoint}}^{(\mathrm{B})}
++
+\lambda_{\mathrm{residual}}
+\mathcal{L}_{\mathrm{residual}}
++
+\lambda_{\mathrm{sparse}}
+\mathcal{L}_{\mathrm{sparse}}.
+\label{appb-eq:methods-stage-b-objective}
+\end{equation}
+
+Stage C minimized
+
+\begin{equation}
+\begin{aligned}
+\mathcal{L}^{(\mathrm{C})}
+={}&
+\mathcal{L}_{\mathrm{CFM}}^{(\mathrm{C})}
++
+\lambda_{\mathrm{endpoint}}
+\mathcal{L}_{\mathrm{endpoint}}^{(\mathrm{C})}
+\\
+&+
+\lambda_{\mathrm{residual}}
+\mathcal{L}_{\mathrm{residual}}
++
+\lambda_{\mathrm{sparse}}
+\mathcal{L}_{\mathrm{sparse}}
++
+\lambda_{\mathrm{anchor}}
+\mathcal{L}_{\mathrm{anchor}}.
+\end{aligned}
+\label{appb-eq:methods-stage-c-objective}
+\end{equation}
+
+The symbols
+\(\lambda_{\mathrm{endpoint}}\),
+\(\lambda_{\mathrm{residual}}\),
+\(\lambda_{\mathrm{sparse}}\), and
+\(\lambda_{\mathrm{anchor}}\)
+are nonnegative coefficients controlling the contribution of each auxiliary
+loss. Their evaluated values were
+
+\begin{equation}
+\lambda_{\mathrm{endpoint}}=0.25,
+\qquad
+\lambda_{\mathrm{residual}}=0.01,
+\qquad
+\lambda_{\mathrm{sparse}}=10^{-4},
+\qquad
+\lambda_{\mathrm{anchor}}=0.1.
+\label{appb-eq:methods-training-loss-weights}
+\end{equation}
+
+The flow-matching term has implicit weight \(1\) and defines the primary
+velocity-fitting objective. The auxiliary coefficients regulate endpoint
+alignment, context-field magnitude, context-parameter sparsity, and retention
+of the Stage A self-field solution.
+
+\subsection{Numerical trajectory integration}
+\label{appb-sec:methods-training-integration}
+
+The endpoint losses and final StageBridge estimand require the solution of the
+initial-value problem defined in
+Equation~\ref{eq:methods-stagebridge-complete}. Because the neural differential
+field has no closed-form integral, its trajectory was approximated
+numerically.
+
+The evaluated implementation used the classical fourth-order Runge--Kutta
+method, abbreviated RK4. RK4 advances a state across one progression interval
+by evaluating the vector field four times: at the beginning of the interval,
+at two estimated midpoint states, and at an estimated endpoint state. These
+four velocity estimates are combined into a weighted average. This procedure
+provides a more accurate approximation of a smooth trajectory than using only
+the velocity evaluated at the beginning of each interval.
+
+The interval \([0,1]\) was divided into
+\(K_{\mathrm{int}}=4\) equal integration steps. The step width was
+
+\begin{equation}
+\delta\tau
+=
+\frac{1}{K_{\mathrm{int}}}
+=
+\frac{1}{4}.
+\label{appb-eq:methods-rk4-step-width}
+\end{equation}
+
+Let \(n\in\{0,\ldots,K_{\mathrm{int}}-1\}\) index an integration step,
+let \(\tau_n=n\delta\tau\), and let \(z_n\) denote the numerical approximation
+to the regulatory state at \(\tau_n\). For a selected field
+\(v(z,w,\tau)\), the four RK4 velocity evaluations were
+
+\begin{equation}
+\begin{aligned}
+k_{1,n}
+&=
+v\left(z_n,w,\tau_n\right),
+\\
+k_{2,n}
+&=
+v\left(
+z_n+\frac{\delta\tau}{2}k_{1,n},
+w,
+\tau_n+\frac{\delta\tau}{2}
+\right),
+\\
+k_{3,n}
+&=
+v\left(
+z_n+\frac{\delta\tau}{2}k_{2,n},
+w,
+\tau_n+\frac{\delta\tau}{2}
+\right),
+\\
+k_{4,n}
+&=
+v\left(
+z_n+\delta\tau k_{3,n},
+w,
+\tau_n+\delta\tau
+\right).
+\end{aligned}
+\label{appb-eq:methods-rk4-slopes}
+\end{equation}
+
+Each vector
+\(k_{a,n}\in\mathbb{R}^{d_z}\), for \(a\in\{1,2,3,4\}\), is a regulatory
+velocity estimate. The first uses the current state. The second and third use
+two midpoint state estimates. The fourth uses an estimated state at the end of
+the interval.
+
+The state update was
+
+\begin{equation}
+z_{n+1}
+=
+z_n
++
+\frac{\delta\tau}{6}
+\left(
+k_{1,n}
++
+2k_{2,n}
++
+2k_{3,n}
++
+k_{4,n}
+\right).
+\label{appb-eq:methods-rk4-update}
+\end{equation}
+
+The coefficients \(1,2,2,1\) form the standard RK4 weighted average of the
+four velocity evaluations. Starting from
+\(z_0=z_i^{\mathrm{obs}}\), four applications of
+Equation~\ref{appb-eq:methods-rk4-update} produce the numerical endpoint
+\(z_4\), which approximates \(z_i(1)\). During full-field integration, the
+source context \(w_i\) was supplied unchanged to every field evaluation in
+Equation~\ref{appb-eq:methods-rk4-slopes}. The implementation therefore preserved the source-fixed context convention within every intermediate RK4 calculation.
+
+
+\subsection{Optimization and reproducibility}
+\label{appb-sec:methods-training-optimization}
+
+Model parameters were updated with Adam, an adaptive first-order gradient
+optimizer. At each step, Adam uses the current gradient together with running estimates of its first and second moments to determine a separate update scale for each parameter.
+
+Stage A used \(1{,}000\) optimization steps with learning rate \(10^{-3}\).
+Stage B used \(500\) steps with learning rate \(10^{-3}\). Stage C used
+\(500\) steps with learning rate \(10^{-4}\). The learning rate controls the
+overall magnitude of each parameter update. Each optimization step used
+\(B=64\) transport-sampled pairs and a newly estimated
+conditional-stratified transport plan constructed from at most
+\(B_{\mathrm{OT}}=512\) source receivers and \(512\) target receivers.
+
+The Euclidean norm of the complete gradient vector was clipped at \(10\).
+When the unscaled gradient norm exceeded this threshold, all gradients were
+rescaled by a common factor before the optimizer update. This procedure
+limited unstable parameter changes arising from an unusually large loss
+gradient.
+
+A sampled minibatch occasionally contained no ecological stratum satisfying
+the cross-stage common-support requirements. In that case, the minibatch was resampled. A maximum of \(20\) resampling attempts was allowed for each
+optimization step. Failure to obtain a valid stratum after these attempts
+terminated the fold-specific run and recorded insufficient ecological support for the configured sampling procedure.
+
+Random-number generators used for donor sampling, receiver sampling,
+progression-coordinate sampling, and parameter initialization were seeded for each fold. Training and held-out donor sets were checked for disjointness before model fitting. The LUAD analysis used five donor-held-out folds, and the PanIN analysis used three. The fitted parameters, Stage A self-field anchor, training history, maximum coupling dimensions, donor assignments, and frozen coarse-niche transformation were retained for held-out evaluation.
+
+
+\section{Endpoint metric definitions}
+\label{sec:app-b-metrics}
+
+Section~\ref{sec:methods-heldout-endpoints} defines the primary conditional
+endpoint metric (Equation~\ref{eq:methods-conditional-endpoint-cost}) and names
+three unstratified sensitivity summaries. Those three are defined here.
+
+\subsection*{Global transport cost}
+
+The global metric applies the same entropically regularized squared-Euclidean
+transport cost to the unstratified held-out populations,
+$D_{\mathrm{OT},f}^{\mathrm{global}} = \operatorname{Sinkhorn}_{\varepsilon}
+(\widehat{Z}_{1,f}, Z_{\mathrm{tgt},f})$,
+with $\varepsilon = 0.05$ and $80$ Sinkhorn iterations. Because the transport
+matrix grows with the product of the two population sizes, each population was
+deterministically subsampled to at most $2{,}048$ receivers before this
+calculation when required.
+
+\subsection*{Energy distance}
+
+For random vectors $X$ and $Y$ drawn from the predicted-endpoint and
+target-stage populations, the population energy distance is
+
+\begin{equation}
+D_{\mathrm{E}}(X,Y)
+=
+\mathbb{E}\!\left[\lVert X-Y \rVert_2\right]
+-
+\tfrac{1}{2}\,\mathbb{E}\!\left[\lVert X-X' \rVert_2\right]
+-
+\tfrac{1}{2}\,\mathbb{E}\!\left[\lVert Y-Y' \rVert_2\right],
+\label{eq:app-b-energy-distance}
+\end{equation}
+
+where $X'$ and $Y'$ are independent draws from the same populations as $X$ and
+$Y$ respectively. The empirical estimate therefore compares the mean
+between-population distance against the internal dispersion of each population,
+and is zero only when the two distributions coincide. Pairwise calculations were
+deterministically subsampled to at most $1{,}000$ receivers per population.
+
+\subsection*{Target-stage classifier probability}
+
+Within each held-out fold, a logistic classifier was fitted to the observed
+source-stage states as class $0$ and the observed target-stage states as class
+$1$, then applied to the predicted endpoints $\widehat{Z}_{1,f}$. The reported
+quantity is the mean probability assigned to class $1$, which measures whether
+predicted endpoints resemble the observed target stage more closely than the
+observed source stage. This score is descriptive: it did not enter model
+fitting, model selection, or any falsification-ladder comparison.

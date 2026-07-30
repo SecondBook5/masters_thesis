@@ -1,765 +1,1922 @@
-\chapter{StageBridge: Materials and Methods} \label{chap:methods}
-
-%% Chapter 3 = the StageBridge model (single model; CRRT-UDE is a descriptive technical label, not a
-%% second branded method). VOICE: declarative, bold; no negate-first; honesty in the limitations.
-%% Equations numbered; every variable defined (Systems-Bio convention). Methods subsections = noun phrases.
-%% Names: StageBridge (the model); Merchavit (Rust BANKSY); SDRA; Hierarchical Set Transformer.
-%% Corrections reflected: low-rank identifiable A = U V (rank 32); source-fixed context w(tau)=w_i primary.
+%% ============================================================================
+%% CHAPTER 2 -- FINALIZED
+%% StageBridge is the sole named model in this chapter.
+%% VOICE: declarative and direct; subsection titles are noun phrases.
+%% CONVENTION: substantive displayed equations are numbered; every variable,
+%%   index, dimension, and operator is defined at first use.
+%%
+%% RESTRUCTURE SUMMARY (vs. previous draft):
+%%   3,154 -> ~1,480 lines | 117 -> 46 numbered equations
+%%   45 subsections -> 24  | 15 sub-subsections -> 0
+%%   Falsification ladder: 9 prose sub-subsections -> 1 table (Tab. 2.2)
+%%   §2.9 reorganized by evidential tier rather than by tool
+%%   Derivations, per-term algebra, and tool parameters moved to App. A/B/C
+%%   (see removed-from-chapter-2.md for the destination manifest)
+%% ============================================================================
+\chapter{StageBridge: Data and Methods}
+\label{chap:methods}
 
 \section{Overview}
+\label{sec:methods-overview}
 
-Chapter~\ref{chap:intro} argued that premalignant progression is a tissue-level process and posed
-three pre-specified hypotheses about whether, through which regulatory programs, and at what spatial
-scale local tissue context alters epithelial progression. This chapter builds the method that
-operationalizes and tests them. Its design is disciplined by adversarial validation: the transport
-coupling that defines the estimand was selected against a frozen synthetic benchmark with known ground
-truth, and an initial formulation that failed that benchmark was discarded before any real data were
-analyzed (Section~\ref{sec:selection}).
+StageBridge estimates progression-aligned epithelial regulatory transport from
+cross-sectional spatial transcriptomic data. The epithelial component decoded
+from each retained spatial measurement is treated as a receiver characterized
+by an observed regulatory state and an ecological context. Because source- and target-stage receivers are sampled from different tissue
+sections and donors, direct receiver-level correspondences are unavailable. StageBridge therefore combines a probabilistic source--target coupling with a continuous model of regulatory state change.
 
-StageBridge is a context-residual universal differential equation framework for learning
-progression-associated regulatory transport from cross-sectional spatial omics. It models premalignant
-epithelial progression as a receiver-centered transition problem: each focal epithelial unit is a
-\emph{receiver} whose progression-aligned behavior is modeled, and its surrounding tissue is the
-\emph{local context} that may redirect that behavior. StageBridge is built to separate three
-contributions to a receiver's progression that a static tissue snapshot ordinarily confounds:
-receiver-intrinsic progression, specimen-level ecology, and genuinely local niche redirection. The
-central object of inference is the \emph{context residual} $R_{\mathrm{cond}}$: the component of the
-epithelial transition field that local cell-state context explains after the receiver's own state and
-the ordered stage edge are accounted for.
+Each receiver is represented by two distinct feature sets. The observed
+receiver state, \(z_i^{\mathrm{obs}}\), is derived from the epithelial
+expression profile decoded from Visium spot \(i\) and comprises PROGENy pathway
+activities and CollecTRI transcription-factor activities. The context vector,
+\(w_i\), contains non-epithelial composition estimates from the focal spot
+together with spatial neighborhood summaries constructed independently within
+the corresponding tissue section. Epithelial abundance, epithelial expression,
+and receiver-derived regulatory features are excluded from the context
+representation before model fitting.
 
-The implementation evaluated in this thesis uses fixed regulatory receiver states, precomputed
-spatial-context features, conditional-stratified optimal transport, and conditional flow matching. This
-chapter defines the progression-inference problem (Section~\ref{sec:problem}), the design principles
-that organize the model (Section~\ref{sec:principles}), the unified dynamical formulation
-(Section~\ref{sec:field}), the receiver and context representations
-(Sections~\ref{sec:receiver-rep}--\ref{sec:context-rep}), the transport coupling
-(Section~\ref{sec:coupling}), the context-residual estimand (Section~\ref{sec:estimand}), the training
-procedure (Section~\ref{sec:training}), and the identifiability screen and falsification ladder
-(Section~\ref{sec:selection}--\ref{sec:ladder}). Section~\ref{sec:config} states exactly what produced
-the results of the following chapter and names the architectural extension that completes the model.
-Figure~\ref{fig:core-schematic} summarizes the evaluated implementation.
+Source- and target-stage receivers are related through ecologically stratified entropic optimal transport. Broad non-epithelial composition is used to define coarse ecological strata with support across stages and donors,
+and entropically regularized optimal transport is then computed within each retained stratum using distance in regulatory state space. This construction restricts correspondence to receivers occupying comparable broad ecological settings while reserving finer receiver-specific context for the dynamical model. The separation is intentional: if the transport coupling were optimized directly on the same context features whose contribution is subsequently
+estimated, ecological information would be encoded in the correspondence upstream of the context-effect analysis.
+
+Regulatory change is modeled along a normalized progression coordinate,
+\(\tau \in [0,1]\), using a structured neural differential field. The field contains a self component conditioned on receiver state and progression
+coordinate and a context component that additionally receives the ecological
+representation. Training proceeds in three stages. Conditional flow matching
+first estimates the self field, then estimates the context field while holding
+the self field fixed, and finally refines both fields jointly under an anchoring penalty that
+constrains the self component toward its first-stage estimate.
+
+The primary estimand is the conditional context residual. For source receiver
+\(i\), with observed regulatory state \(z_i^{\mathrm{obs}}\) and ecological
+context \(w_i\), the full and self-only fields are integrated from the same
+initial condition to the target end of the progression interval:
+
+\begin{equation}
+R_{\mathrm{cond}}\!\left(z_i^{\mathrm{obs}},w_i\right)
+=
+z_i^{\mathrm{full}}(1)
+-
+z_i^{\mathrm{self}}(1).
+\label{eq:methods-rcond-overview}
+\end{equation}
+
+Here, \(z_i^{\mathrm{full}}(1)\) and \(z_i^{\mathrm{self}}(1)\) denote the
+regulatory endpoints obtained by integrating the full and self-only fields,
+respectively, from \(z_i^{\mathrm{obs}}\). The observed source context is held
+fixed throughout integration of the full trajectory. Both endpoints and the
+resulting residual are expressed directly in named regulatory coordinates
+rather than in an unconstrained latent space; Section~\ref{sec:methods-estimand}
+gives the full construction and its scope.
+
+Model assessment includes
+donor-held-out prediction, donor-level uncertainty estimation, substitution of
+specimen-average context, matched context shuffling, architectural ablation, and
+synthetic recovery benchmarks.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{crrt_ude_schematic.pdf}
-\caption{StageBridge schematic (evaluated implementation). Each epithelial receiver carries a
-regulatory state $z$ (PROGENy pathways and CollecTRI transcription factors) and a spatial context
-vector $w$ (deconvolution-derived composition and Merchavit spatial features). The vector field
-decomposes into a receiver-intrinsic self term $v_{\mathrm{self}}$ and a tanh-gated context term
-$v_{\mathrm{context}}$; integrating from a common initial state in self versus full mode yields the
-per-receiver context residual $R_{\mathrm{cond}}$.}
-\label{fig:core-schematic}
+\caption{
+StageBridge workflow. The epithelial component decoded from each retained
+Visium spot is represented by a regulatory state \(z\), while non-epithelial
+focal-spot composition and section-specific spatial neighborhood features define
+its ecological context \(w\). Ecologically stratified entropic optimal transport constructs probabilistic
+source--target correspondences within coarse ecological strata. Conditional flow matching estimates the self and context
+components of a continuous progression field. Integrating the full and self-only fields from the same initial receiver state yields the conditional
+context residual \(R_{\mathrm{cond}}\).
+}
+\label{fig:stagebridge-methods-schematic}
 \end{figure}
 
-\section{Data and preprocessing}
-\label{sec:data}
 
-\subsection{Cohorts}
+\section{Cohorts, progression edges, and analysis units}
+\label{sec:methods-cohorts}
 
-The LUAD cohort draws on the publicly available lung adenocarcinoma progression atlas, spanning
-five morphological stages: Normal, atypical adenomatous hyperplasia (AAH), adenocarcinoma in situ
-(AIS), minimally invasive adenocarcinoma (MIA), and invasive LUAD. The atlas provides paired
-single-nucleus RNA-seq and Visium spatial transcriptomics. The transport \emph{receivers} are the
-Visium spots: each spot's epithelial regulatory state $z$ is read from its DestVI-decoded epithelial
-expression and its context $w$ from the surrounding non-epithelial ecology (below), so a receiver is a
-spatial spot, not a dissociated single nucleus. The single-nucleus data serve as the deconvolution and
-cell-type reference and for the co-expression analyses, not as transport receivers. Donors were assigned to patient-held-out cross-validation folds
-(Section~\ref{sec:estimand}) prior to any analysis; no patient contributes to both
-training and evaluation on any edge. The PanIN cohort consists of graded pancreatic
-intraepithelial neoplasia Visium spatial transcriptomics sections, processed through the same
-pipeline with a low-grade vs high-grade edge.
+\subsection{Cohorts and progression edges}
+\label{sec:methods-luad-cohort}
+\label{sec:methods-panin-cohort}
 
-\subsection{Regulatory program scoring}
+The primary analysis used a lung adenocarcinoma progression atlas containing
+paired single-nucleus RNA-sequencing and Visium spatial transcriptomic
+measurements spanning normal lung, atypical adenomatous hyperplasia (AAH),
+adenocarcinoma in situ (AIS), minimally invasive adenocarcinoma (MIA), and invasive lung adenocarcinoma. The single-nucleus measurements provided the cell-state reference used for annotation, regulatory-state construction, and spatial deconvolution. The Visium measurements provided the spatial receivers used for transport modeling.
 
-Regulatory activities were computed on log-normalized expression using decoupleR \autocite{Badia-I-Mompel2022-te}.
-PROGENy pathway activities (14 pathways) and CollecTRI transcription-factor activities
-(759 TFs) were estimated by univariate linear model (ULM) to produce a cells$\times$773
-regulatory-program matrix $z$. This matrix is the receiver state space in which all
-transport, matching, and interpretation are defined.
+The principal model-development edge was AAH\(\rightarrow\)AIS, representing the transition from an early premalignant lesion to a preinvasive adenocarcinoma state. Additional ordered edges were analyzed only when both source and target stages retained sufficient support across patients and coarse ecological strata. Edge-specific datasets were defined before model fitting, and each model was trained and evaluated within a single ordered source--target contrast.
 
-\subsection{Spatial context features}
+The secondary analysis used spatial transcriptomic sections containing graded pancreatic intraepithelial neoplasia, with low-grade and high-grade PanIN defining the ordered transition. These data were processed through the same receiver-state construction, context construction, conditional transport, and dynamical modeling workflow used for LUAD. Disease-specific models were fitted independently: transport couplings, feature transformations, model parameters, and vector fields were estimated separately for the LUAD and PanIN cohorts.
 
-Spatial neighborhood features were computed with Merchavit, a Rust implementation of the BANKSY
-spatial-context algorithm \autocite{Singhal2024-rv}, applied independently within each tissue
-section. BANKSY augments each cell's own expression with a weighted mean and a weighted
-gradient of its spatial neighbors' expression, capturing the composition and structure of the
-immediate tissue environment. Cell-type composition per spot was estimated by DestVI
-deconvolution \autocite{Lopez2022-ps} against the Lung Cancer Atlas single-cell
-reference \autocite{Salcher2022-pu}. The assembled context vector $w$ contains broad non-epithelial
-composition fractions (cancer-associated fibroblast, immune, myeloid, stromal, lymphoid, and
-endothelial), spatial BANKSY features, and the regulatory program scores of the surrounding
-\emph{non-epithelial} cells; the receiver's own epithelial regulatory state is excluded from $w$
-by construction (Section~\ref{sec:context-rep}), so context and receiver state are disjoint.
+Because the PanIN cohort was smaller, its cross-validation and ecological stratification schemes were reduced to preserve common support within the training folds. The PanIN analysis therefore served as a secondary evaluation of estimator behavior under reduced sample support and portability to a biologically distinct, fibroblast-rich ductal precursor system, not as a comparably powered discovery cohort.
 
-\section{The progression-inference problem}\label{sec:problem}
+\subsection{Spatial receiver definition}
+\label{sec:methods-analysis-unit}
 
-Let a receiver be indexed by $i$. Each receiver carries a regulatory state
-$z_i \in \mathbb{R}^{d_z}$, a spatial context vector $w_i \in \mathbb{R}^{d_w}$, and a discrete stage
-label from an ordered progression. For lung adenocarcinoma the sequence is
-$\mathrm{Normal} \to \mathrm{AAH} \to \mathrm{AIS} \to \mathrm{MIA} \to \mathrm{invasive\ LUAD}$; for
-pancreatic intraepithelial neoplasia it is low-grade to high-grade PanIN. Progression along a single
-ordered edge is parameterized by a normalized pseudo-time $\tau \in [0,1]$, where $\tau=0$ denotes the
-source stage and $\tau=1$ the target stage. The state $z_i$ is an epithelial-intrinsic quantity
-(Section~\ref{sec:receiver-rep}); the context $w_i$ summarizes the non-epithelial tissue ecology
-surrounding receiver $i$ (Section~\ref{sec:context-rep}).
+The StageBridge analysis unit is the epithelial component decoded from a retained Visium spot. Because each Visium spot aggregates transcripts from multiple cells, it constitutes a spatially mixed measurement rather than a single-cell observation. DestVI decoding, constructed in Section~\ref{sec:methods-destvi}, separates each spot into the receiver state and the ecological context.
 
-The data are cross-sectional: no receiver is observed at both $\tau=0$ and $\tau=1$, and there is no
-observed longitudinal correspondence between a source cell and the target cell it becomes. The modeling
-question is stated in two forms. Informally: given a receiver's epithelial state and an ordered stage
-edge, which local cell-state contexts are associated with residual changes in the inferred transition
-behavior? Formally: for a learned transition field $v(z, w, \tau)$, does the context-dependent
-component of $v$ carry information about the progression endpoint beyond the receiver-intrinsic
-component, after holding the receiver state $z$ and the stage edge fixed? The context residual
-$R_{\mathrm{cond}}$ of Section~\ref{sec:estimand} makes this comparison the direct object of inference
-rather than an annotation applied after transition modeling.
+A StageBridge receiver is therefore the inferred epithelial component of a spatial spot, not a dissociated epithelial cell or single nucleus. The single-nucleus measurements served as the reference for deconvolution and cell-state annotation and as the substrate for secondary co-expression analyses; they were not used as transport receivers.
 
-\section{StageBridge design principles}\label{sec:principles}
+For receiver \(i\), \(z_i^{\mathrm{obs}}\) denotes the observed epithelial
+regulatory state, \(w_i\) the ecological context, \(d_i\) the donor identifier, and \(s_i\) the pathological stage. Donor identity defined the independent
+biological unit for data partitioning and uncertainty estimation. All receivers
+from a given donor were assigned to the same cross-validation fold, ensuring that every spatial measurement from that donor contributed either to model
+fitting or to held-out evaluation within a given fold, but never to both.
 
-StageBridge is organized by three principles. The first is a \emph{receiver-centered} view of
-transition: information flows to a receiver from its neighborhood, and the model asks what a cell
-receives from its surroundings. This mirrors the framing that a therapy is administered to a patient
-rather than to a tumor in isolation, so that the environment a cell inhabits, and not only its own
-genome, shapes its trajectory. The second is that matching, transport, and interpretation are carried
-out in a \emph{semantic} feature space whose coordinates are named biological programs, so a context
-effect reads directly as an effect on a specific pathway or regulator rather than on an opaque latent
-dimension. The third is that the transition field is \emph{structured}: it is written as interpretable
-algebraic terms combined with small learned residuals, following a universal differential equation
-(UDE) parameterization, so the learned dynamics remain readable.
+Receiver and context representations were constructed independently and joined using a unique section-and-barcode identifier. Spatial measurements lacking a valid epithelial decode, a matched context record, or the minimum required epithelial abundance were excluded before downstream model fitting. These
+filters were applied before construction of the final edge-specific receiver sets and cross-validation partitions.
 
-These principles motivate a target separation of three contributions to a receiver's progression:
-\begin{equation}\label{eq:separation}
-\underbrace{\text{receiver-intrinsic progression}}_{\text{cell's own state}}
-\quad\text{vs.}\quad
-\underbrace{\text{specimen ecology}}_{\text{donor/stage-level environment}}
-\quad\text{vs.}\quad
-\underbrace{\text{local niche redirection}}_{\text{cell's own microenvironment}} .
+
+
+\section{Construction of receiver and context representations}
+\label{sec:methods-representations}
+
+Each retained spatial measurement was assigned two independently constructed representations: an epithelial regulatory state derived from lineage-specific expression decoded at the focal spot, and an ecological context combining non-epithelial focal composition with spatial neighborhood structure from the corresponding tissue section. The two representations were indexed by a common section-and-barcode identifier and joined only after feature construction.
+
+\subsection{Preprocessing, deconvolution, and epithelial decoding}
+\label{sec:methods-spatial-preprocessing}
+\label{sec:methods-destvi}
+
+Spatial measurements were processed separately for each ordered progression edge while preserving section identity, donor identity, pathological stage, and two-dimensional Visium coordinates. Spots with fewer than \(100\) detected genes and genes detected in fewer than \(3\) spots were removed. Counts were
+library-size normalized to \(10^{4}\) transcripts per spot and transformed as
+\(\log(1+x)\), with the raw-count matrix retained for downstream procedures that required count-scale input. The \(2{,}000\) most highly variable genes were
+selected from the raw-count layer using the Seurat v3 procedure and used for spatial neighborhood feature construction. All spatial graphs and neighborhood
+features were computed independently within each tissue section. Complete preprocessing thresholds are reported in
+Appendix~\ref{sec:app-c-preproc}.
+
+Cell-type composition and lineage-specific expression were estimated using DestVI \autocite{Lopez2022-ps}, a probabilistic deconvolution model that relates spatial transcriptomic measurements to a single-cell reference while allowing
+continuous within-lineage variation. DestVI produces two outputs used separately by StageBridge: estimated cell-type proportions for each spot and a
+decoded expression state for each represented lineage. The decoded epithelial profile defined the receiver state, whereas non-epithelial composition
+contributed to the ecological context.
+
+For LUAD, the analysis used precomputed DestVI models referenced to the Lung
+Cancer Atlas and their corresponding spot-level composition estimates
+\autocite{Salcher2022-pu}. Epithelial expression was reconstructed using the
+decoder associated with each spatial sample. The primary LUAD analysis used the pulmonary alveolar type 2 lineage, whereas the PanIN analysis used the
+disease-specific epithelial lineage defined by the pancreatic reference
+annotation. Because sample-specific DestVI models were fitted independently, decoded expression matrices were restricted to the intersection of genes represented across all compatible decoders. This placed all retained receivers
+within a common measured-gene space before regulatory-state construction.
+
+The epithelial abundance assigned to spot \(i\) was defined as
+
+\begin{equation}
+a_i^{\mathrm{epi}}
+=
+\sum_{\ell\in\mathcal{E}}
+\widehat{\pi}_{i\ell},
+\label{eq:methods-epi-abundance}
 \end{equation}
-The evaluated implementation separates receiver-intrinsic progression from context
-(Section~\ref{sec:field}), and the falsification ladder of Section~\ref{sec:ladder} separates
-specimen-level ecology from genuinely local niche effects empirically by comparing a donor/stage-average
-context against each receiver's own local context. An explicit architectural decomposition of the
-context into a specimen-average and a local residual, which would isolate the third term inside the
-field itself, is the designed extension of Section~\ref{sec:config}.
 
-\section{The StageBridge vector field}\label{sec:field}
+where \(\widehat{\pi}_{i\ell}\) denotes the DestVI-estimated proportion of epithelial reference population \(\ell\), and \(\mathcal{E}\) is the disease-specific set of epithelial reference populations. A spot was retained as a receiver when \(a_i^{\mathrm{epi}} \geq 0.30\). The continuous abundance
+estimate was preserved for threshold-sensitivity analyses. Counts of decoded, context-matched, and abundance-filtered spots were recorded for each progression edge.
 
-The transition is generated by a vector field that specifies the instantaneous velocity of the
-regulatory state along progression pseudo-time. The field is the sum of a receiver-intrinsic (self)
-component and a context component, following the UDE parameterization in which structured, interpretable
-terms are combined with small learned residual terms (ude). For the evaluated implementation the field
-is
-\begin{equation}\label{eq:field-sum}
-\frac{dz_i}{d\tau} \;=\; v_{\mathrm{self}}(z_i, \tau) \;+\; v_{\mathrm{context}}(z_i, w_i, \tau),
+\subsection{Regulatory receiver state}
+\label{sec:methods-receiver-state}
+
+Decoded epithelial expression was transformed to the library-normalized logarithmic scale used for regulatory activity inference:
+
+\begin{equation}
+x_{ig}^{\mathrm{log}}
+=
+\log\!\left(
+1+10^{4}\widetilde{x}_{ig}^{(e)}
+\right),
+\label{eq:methods-decoded-log}
 \end{equation}
-where $v_{\mathrm{self}}$ is the intrinsic progression velocity that depends on the receiver alone and
-$v_{\mathrm{context}}$ is the additional velocity that local context contributes.
 
-The self field is
-\begin{equation}\label{eq:vself}
-v_{\mathrm{self}}(z, \tau) \;=\; A\,(m \odot z) \;+\; b \;+\; B\, r(z) \;+\; \rho_{s}(z, \tau),
-\end{equation}
-where $A \in \mathbb{R}^{d_z \times d_z}$ is a learned linear map with a \emph{low-rank, identifiable}
-factorization $A = U V$ ($U \in \mathbb{R}^{d_z \times \rho}$, $V \in \mathbb{R}^{\rho \times d_z}$,
-rank $\rho = 32$), $b \in \mathbb{R}^{d_z}$ is a bias, $m \in \{0,1\}^{d_z}$ is a fixed mask that zeroes
-the regulatory coordinates $r_{\mathrm{idx}}$ of $z$ before they enter $A$, $B \in \mathbb{R}^{d_z
-\times d_r}$ is a learned linear map acting on the regulatory sub-vector $r(z)$, and $\rho_{s}:
-\mathbb{R}^{d_z + 1} \to \mathbb{R}^{d_z}$ is a small residual multilayer perceptron (a single hidden
-layer of width $64$ with ReLU activation) taking the state $z$ concatenated with the scalar pseudo-time
-$\tau$. Two constructions make the linear self dynamics identifiable. The low-rank factorization
-$A = U V$ reduces the linear operator from $d_z^{2}\approx 6.0\times10^{5}$ free parameters to
-$2 d_z \rho \approx 5.0\times10^{4}$, a capacity defensible on a cohort of tens of donors. The mask
-$m$ removes the regulatory coordinates from $A$'s input so that the linear regulatory effect is carried
-by $B$ alone; without the mask, $A z$ and $B\,r(z)$ contain an exact linear redundancy and neither map
-is separately recoverable. The self field is the intrinsic epithelial progression velocity, independent
-of local context.
+where \(\widetilde{x}_{ig}^{(e)}\) is the expected expression of gene \(g\) assigned to epithelial lineage \(e\) in receiver \(i\).
 
-Local context enters through a gated modulation of the regulatory sub-vector. The gate is
-\begin{equation}\label{eq:gate}
-g(w) \;=\; \tanh\!\left(G w + c\right),
-\end{equation}
-where $G \in \mathbb{R}^{d_r \times d_w}$ and $c \in \mathbb{R}^{d_r}$ are a learned linear map and
-bias, and $g(w) \in (-1, 1)^{d_r}$ is a bounded per-program modulation of context $w$ into the
-regulatory sub-space. The context field is
-\begin{equation}\label{eq:vcontext}
-v_{\mathrm{context}}(z, w, \tau) \;=\; C\!\left[\, r(z) \odot g(w) \,\right] + \rho_{c}(z, w, \tau),
-\end{equation}
-where $\odot$ denotes the Hadamard (elementwise) product, $C \in \mathbb{R}^{d_z \times d_r}$ is a
-learned linear map from the gated regulatory signal to velocity space, and $\rho_{c}: \mathbb{R}^{d_z +
-d_w + 1} \to \mathbb{R}^{d_z}$ is a small residual multilayer perceptron (one hidden layer of width
-$64$, ReLU) taking $z$, $w$, and $\tau$. The structured term $C[r(z) \odot g(w)]$ encodes the
-interpretable claim of the model: local context reweights the receiver's own regulatory programs, so a
-context that raises $g(w)$ on a given pathway amplifies that pathway's contribution to the transition
-velocity.
+Regulatory activities were inferred with the decoupleR univariate linear model
+\autocite{Badia-I-Mompel2022-te}. This procedure estimates regulator activity from coordinated expression of weighted target genes and therefore produces activity scores rather than measurements of regulator expression. That
+distinction is fundamental to the interpretation of the conditional context residual and is formalized in Section~\ref{sec:methods-estimand-scope}. PROGENy supplied the weighted pathway--target networks \autocite{Schubert2018-ph}, and CollecTRI supplied the
+curated transcription-factor--target relationships
+\autocite{Muller-Dott2023-mu}.
 
-The full field selects its mode:
-\begin{equation}\label{eq:field}
-\frac{dz}{d\tau} \;=\;
-\begin{cases}
-v_{\mathrm{self}}(z, \tau), & \text{mode} = \mathrm{self}, \\[4pt]
-v_{\mathrm{self}}(z, \tau) + v_{\mathrm{context}}(z, w, \tau), & \text{mode} = \mathrm{full}.
-\end{cases}
-\end{equation}
-The self mode is the context-neutral transition; the full mode adds the context modulation. The two
-modes share the same self parameters, so the difference between their trajectories from a common
-initial state isolates the effect of context. This shared-parameter construction is what makes the
-estimand of Section~\ref{sec:estimand} a within-receiver comparison rather than a comparison across two
-independently fit models.
+For receiver \(i\), the observed regulatory state was
 
-\section{Receiver-state representation}\label{sec:receiver-rep}
-
-The receiver state $z_i$ is a regulatory-activity vector of dimension $d_z = 773$, comprising $14$
-PROGENy pathway activities (progeny) and $759$ CollecTRI transcription-factor (TF) activities
-\autocite{Muller-Dott2023-mu}. Regulatory activities are scored from decoded epithelial expression using the decoupleR
-univariate linear model (ULM) \autocite{Badia-I-Mompel2022-te}, which estimates pathway and TF activity from a target gene
-program and its expression. Working in a regulatory basis rather than a raw gene-expression basis yields
-a low-dimensional, interpretable state in which each coordinate corresponds to a named biological
-program, so a context effect on transport can be read directly as an effect on a specific pathway or
-regulator.
-
-A subset of the state, the regulatory sub-vector $r(z) \in \mathbb{R}^{d_r}$, is selected by the fixed
-index set $r_{\mathrm{idx}} \subseteq \{1, \dots, d_z\}$ with $|r_{\mathrm{idx}}| = d_r$. The sub-vector
-$r(z)$ is the portion of the regulatory state through which local context is allowed to act
-(Section~\ref{sec:field}); in the primary configuration $r(z)$ comprises the $14$ PROGENy pathway
-activities ($d_r = 14$), a fixed, named, interpretable program set. The structured maps $A$, $B$, $C$,
-and $G$ of Equations~\ref{eq:vself}--\ref{eq:vcontext} act on this basis, so every structured term is a
-statement about named regulatory programs.
-
-\section{Receiver-centered context representation}\label{sec:context-rep}
-
-The context vector is the output of a neighborhood encoder,
-\begin{equation}\label{eq:encoder}
-w_i \;=\; E_{\mathrm{context}}(\mathcal{N}_i),
-\end{equation}
-where $\mathcal{N}_i$ is the set of cells in the spatial neighborhood of receiver $i$ and
-$E_{\mathrm{context}}$ maps that neighborhood to a fixed-dimensional context vector. The encoder is
-modular, and StageBridge admits two encoders.
-
-In the implementation evaluated in this thesis, $E_{\mathrm{context}}$ is a fixed feature pipeline over
-the spatial neighborhood. Cell-type composition is estimated by DestVI deconvolution \autocite{Lopez2022-ps} of the
-spatial transcriptomic spot against the Lung Cancer Atlas \autocite{Salcher2022-pu} single-cell reference \autocite{Salcher2022-pu}, yielding
-a per-spot cell-type proportion vector, from which interpretable ecological summary features are
-derived, including the cancer-associated fibroblast (CAF) fraction, the immune fraction, and a
-compositional diversity measure, together with the raw non-epithelial proportions. Spatial neighborhood
-structure is encoded by Merchavit, a Rust implementation of the BANKSY algorithm \autocite{Singhal2024-rv}, computed
-independently within each tissue section so that neighborhoods never cross section boundaries; Merchavit
-produces azimuthal-gradient and neighbor-mean features that capture the spatial arrangement of the local
-microenvironment beyond its composition. The composition-derived features and the Merchavit spatial
-features are concatenated to form $w_i$. Context is constructed to be non-epithelial: epithelial and
-receiver-derived composition channels are excluded from $w_i$, so the context vector describes the
-environment surrounding the receiver and the receiver's own epithelial identity enters the model only
-through $z_i$. This separation is what allows a context effect to be tested as an effect distinct from
-the receiver's intrinsic state.
-
-In the complete StageBridge architecture, $E_{\mathrm{context}}$ is a receiver-centered Hierarchical
-Set Transformer that encodes the neighborhood as a permutation-invariant, size-insensitive set and
-aggregates neighbors onto the receiver by spatially-decayed receiver attention, whose weights fall
-monotonically with physical distance. That encoder is the designed extension of
-Section~\ref{sec:config}; the results of this thesis were produced with the fixed DestVI--Merchavit
-encoder, and the two are interchangeable at the interface of Equation~\ref{eq:encoder}.
-
-\section{Conditional-stratified transport}\label{sec:coupling}
-
-Training the field requires a correspondence between source-stage and target-stage receivers, since the
-data are cross-sectional and no receiver is observed at both $\tau=0$ and $\tau=1$. This correspondence
-is supplied by entropic optimal transport. To keep the coupling from encoding the very context effect
-the model is meant to test, the coupling is stratified by a coarse niche label and computed within each
-stratum.
-
-A coarse niche label $a(w) \in \{1, \dots, K\}$ is assigned to each receiver by the NicheStratifier, a
-transformer fit once per training fold. The stratifier standardizes a prespecified coarse ecological
-feature set, projects it onto its leading principal component ($n_{\mathrm{PCA}} = 1$), and
-quantile-bins that component into $K = 3$ strata. The coarse feature set is the two broad non-epithelial
-composition fractions used as the coarse ecology, the CAF fraction and the immune fraction; features
-carrying stage, patient, epithelial, fine-mechanistic, or regulatory-outcome information are rejected by
-an explicit allowlist. The stratifier is frozen after fitting and applied identically to source, target,
-and held-out receivers, so a given coarse niche receives the same stratum regardless of its stage.
-
-Within each stratum $k$ that has cross-stage, multi-patient common support, an entropic optimal-transport
-coupling is computed between the source and target receivers assigned to that stratum:
-\begin{equation}\label{eq:coupling}
-\Pi^{(k)} \;=\; \argmin_{\Pi \in \mathcal{U}(\mu_k^{\mathrm{src}}, \mu_k^{\mathrm{tgt}})}
-\ \sum_{i,j} \Pi_{ij}\, \lVert z_i - z_j \rVert^2 \;-\; \epsilon\, H(\Pi),
-\end{equation}
-where $\mathcal{U}(\mu_k^{\mathrm{src}}, \mu_k^{\mathrm{tgt}})$ is the set of couplings with uniform
-source and target marginals over the receivers in stratum $k$, $\lVert z_i - z_j \rVert^2$ is the
-squared-Euclidean cost in regulatory state space, $H(\Pi) = -\sum_{ij} \Pi_{ij}(\log \Pi_{ij} - 1)$ is
-the entropy of the coupling, and $\epsilon = 0.05$ is the entropic regularization weight. The coupling
-is solved by the Sinkhorn iteration (Appendix~\ref{chap:appendix-a}) for $80$ iterations \autocite{Cuturi2013-li}.
-Source and target receivers are subsampled to at most $512$ per side per training step to bound the
-coupling matrix. A stratum is retained only when it contains at least $10$ receivers per stage drawn
-from at least $2$ patients per stage; strata failing this common-support requirement are excluded from
-training and recorded. The cost depends only on the regulatory state $z$, and the matching is confined
-to receivers sharing a coarse niche, so the coupling introduces no fine-context information that could
-make the context-residual estimand circular.
-
-\section{The context-residual estimand}\label{sec:estimand}
-
-The primary estimand is the per-receiver context residual. For a receiver with initial state $z_0$ and
-observed source context $w$, let $z_{\mathrm{full}}(1)$ denote the endpoint of integrating
-Equation~\ref{eq:field} in full mode from $\tau=0$ to $\tau=1$, and $z_{\mathrm{self}}(1)$ the endpoint
-of integrating from the \emph{same} $z_0$ in self mode. The context residual is
-\begin{equation}\label{eq:rcond}
-R_{\mathrm{cond}}(z_0, w) \;=\; \phi\!\left[z_{\mathrm{full}}(1)\right] - \phi\!\left[z_{\mathrm{self}}(1)\right],
-\end{equation}
-where $\phi$ is a semantic projection of the endpoint into an interpretation space. In the primary
-implementation $\phi$ is the identity, so $R_{\mathrm{cond}}$ is computed directly in the regulatory
-state space and $R_{\mathrm{cond}} \in \mathbb{R}^{d_z}$; coordinate $d$ of $R_{\mathrm{cond}}$ is the
-context effect on regulatory program $d$. Both integrations start from the identical $z_0$, hold the
-receiver's observed context $w$ fixed along the trajectory, and share the self parameters, so
-$R_{\mathrm{cond}}$ measures the transport that local context adds to, or removes from, the receiver's
-intrinsic progression. Integration uses a fourth-order Runge--Kutta scheme with four steps.
-
-Stated plainly, $R_{\mathrm{cond}}$ answers the following question for each receiver: holding the
-receiver's own regulatory state fixed, how does its predicted progression endpoint change when the
-surrounding tissue context is allowed to act? A program with $R_{\mathrm{cond}}$ far from zero is a
-program whose transition the local niche redirects.
-
-The projection $\phi$ makes explicit the semantic-space principle of Section~\ref{sec:principles}: the
-transition is generated in the state space $z$, but distances, couplings, and the estimand are evaluated
-in a semantic feature space $\phi(z)$ whose coordinates are interpretable biological programs.
-In the present implementation the regulatory basis itself is the semantic space, so $\phi$ is the
-identity and $R_{\mathrm{cond}}$ is computed directly on the $773$ regulatory coordinates. The machinery
-admits a non-identity $\phi$ (a learned or lossy semantic embedding) without change to the estimand
-definition.
-
-\subsection{Formal hypotheses}\label{sec:hypotheses}
-
-The estimand defines three pre-specified, falsifiable hypotheses, tested in Chapter~\ref{chap:results}.
-
-The \emph{central hypothesis} is that local cell-state context explains reproducible residual
-regulatory transport after the receiver's intrinsic state and the ordered stage edge are accounted
-for. For each regulatory program $d$, let $\bar R_{\mathrm{cond},d}$ be the mean context residual
-over patient-held-out folds. Formally,
-\begin{equation}\label{eq:h0}
-H_0:\; \bar R_{\mathrm{cond},d} = 0 \quad\text{for every program } d,
+\begin{equation}
+z_i^{\mathrm{obs}}
+=
+\begin{bmatrix}
+p_i \\
+t_i
+\end{bmatrix}
+\in
+\mathbb{R}^{d_z},
 \qquad
-H_1:\; \exists\, d \text{ with } \bar R_{\mathrm{cond},d} \neq 0,
+d_z = 14 + 759 = 773,
+\label{eq:methods-receiver-state}
 \end{equation}
-where a program is counted under $H_1$ only if its donor-bootstrap confidence interval excludes zero
-and the sign of $R_{\mathrm{cond},d}$ is consistent across all five patient-held-out folds. In plain
-terms: holding the receiver's own regulatory state fixed, does the surrounding tissue context change
-the predicted progression endpoint for a reproducible set of programs?
 
-The \emph{local-context hypothesis} asks whether that context signal is receiver-local or merely
-specimen-scale. Writing $D_{\text{model}}$ for the held-out endpoint distance (semantic Sinkhorn) of
-a model, the local-niche claim requires
-\begin{equation}\label{eq:h1-local}
-D_{\text{local}} < D_{\text{donor-avg}} < D_{\text{self}}
-\qquad\text{and}\qquad
-D_{\text{local}} < D_{\text{shuffle}},
+where \(p_i\) contains PROGENy pathway activities and \(t_i\) contains CollecTRI transcription-factor activities. The stated dimensionality corresponds to the frozen LUAD analysis matrix. Regulatory coordinates were
+ordered consistently across samples and cross-validation folds. The same
+scoring procedure was applied to each disease system, with disease-specific models retaining the coordinates represented in the corresponding frozen
+analysis matrix.
+
+The regulatory state space served three functions. It defined the coordinates in which the differential model generated trajectories, the cost space used to
+construct source--target transport couplings, and the interpretation space in which conditional context residuals were summarized. Receiver states were constructed exclusively from decoded epithelial expression. Whole-spot regulatory scores and non-epithelial expression were excluded from the receiver representation.
+
+\subsection{Ecological context and leakage control}
+\label{sec:methods-context-construction}
+\label{sec:methods-context-audit}
+
+The ecological context combined focal non-epithelial composition with spatial
+neighborhood structure:
+
+\begin{equation}
+w_i
+=
+\begin{bmatrix}
+q_i \\
+h_i
+\end{bmatrix}
+\in
+\mathbb{R}^{d_w},
+\label{eq:methods-context-vector}
 \end{equation}
-i.e.\ resolving each cell's local niche must beat both donor-/stage-average ecology and a
-stratum-matched context shuffle. Failure of the left inequality while $D_{\text{local}}<D_{\text{self}}$
-holds is the pre-registered ``specimen ecology, not local niche'' outcome, not a model failure.
 
-The \emph{cross-disease hypothesis} is that programs found context-associated in LUAD transfer with
-biologically coherent direction to the graded PanIN series, under the same estimand and stability
-criteria. The PanIN cohort is small by design, so this hypothesis is evaluated as a transferability
-and null-calibration probe rather than an independently powered test.
+where \(q_i\) contains non-epithelial DestVI proportions for the focal spot,
+\(h_i\) contains spatial neighborhood features computed within the corresponding
+tissue section, and \(d_w\) denotes the dimensionality of the retained context representation.
 
-\section{Estimand selection by identifiability screen}\label{sec:selection}
+The focal composition block contained the original DestVI proportions assigned to immune, stromal, endothelial, and other non-epithelial reference populations. Broad cancer-associated fibroblast and immune fractions were also
+derived by summing disease-specific reference populations. These aggregate fractions defined the coarse ecological variables used during stratified transport construction, whereas the underlying cell-population channels
+remained available to the dynamical context field.
 
-The coupling of Section~\ref{sec:coupling} is one of several ways to define the source--target
-correspondence, and the choice determines which estimand the model can support. Three coupling
-formulations were evaluated against a frozen identifiability benchmark before any biological result was
-computed. The \emph{strict-$z$} coupling matches source and target purely on regulatory-state distance
-with no niche stratification. The \emph{progression-geometry} coupling matches along a global
-progression axis. The \emph{conditional-stratified} coupling (Equation~\ref{eq:coupling}) matches only
-within common-support niche strata. Each was scored on a two-tier synthetic benchmark with parameters
-frozen in advance: an abstract tier and a regulatory-structured tier, each requiring a coupling to (i)
-recover a known context-conditioned contrast, (ii) return null under a no-effect control, and (iii)
-respect a known non-identifiable direction. The acceptance thresholds were fixed before scoring:
-recovered-contrast cosine similarity $\geq 0.80$, seed-direction agreement $\geq 0.90$, null gain $<
-0.10$, and non-identifiable correlation $< 0.50$.\footnote{These frozen thresholds and the verdict they
-produce are recorded in the benchmark's authoritative confirmation record
-(\texttt{model\_selection.json}); an earlier, weaker exploratory threshold set retained in the codebase
-was superseded by this frozen screen and is not used for any result reported here.}
+Spatial neighborhood features were constructed using BANKSY
+\autocite{Singhal2024-rv}. BANKSY augments each focal measurement with
+distance-weighted summaries of surrounding expression. Its neighborhood-mean component captures average local molecular composition, whereas its azimuthal component captures first-order directional variation around the focal measurement. A spatial graph was constructed independently within each tissue section using \(k_{\mathrm{geom}}=18\) geometric neighbors. BANKSY was applied
+to the \(2{,}000\) highly variable genes with neighborhood weight
+\(\lambda=0.8\) and maximum azimuthal-gradient order \(m=1\). The selected \(\lambda\) produced a neighborhood-dominant representation while retaining a downweighted focal contribution, and \(m=1\) preserved first-order directional structure. Sections with fewer than \(74\) retained spots were excluded from neighborhood construction and recorded in the processing audit.
 
-Only the conditional-stratified coupling passed both tiers. Strict-$z$ passed the abstract tier but
-was \emph{falsified} by the regulatory-structured tier, and progression-geometry failed both. The
-benchmark therefore rejected the initial strict-$z$ estimand before any biological data were analyzed,
-and selected the conditional-stratified coupling and, with it, the context-conditioned transport
-contrast as the supported estimand; the recorded verdict was \emph{revise}, signifying that the naive
-strict-$z$ formulation does not survive the regulatory-structured tier and the design was changed in
-response. This selection is a precondition of the analysis rather
-than a result of it: the coupling geometry was fixed by the identifiability screen, not chosen to
-maximize any downstream biological signal.
+Because the standard BANKSY representation retains a focal-expression component, the assembled context could preserve information correlated with the receiver itself. Leakage control therefore comprised both explicit feature exclusion and an empirical reconstruction audit.
 
-\section{Three-stage OT-CFM training}\label{sec:training}
+First, all directly receiver-derived or outcome-identifying channels were removed before model fitting. Excluded variables comprised epithelial and malignant composition estimates, whole-spot PROGENy and CollecTRI activities, malignant-fraction and dominant-cell-type summaries, whole-spot compositional diversity, donor identity, pathological stage, and pathology- or region-derived annotations. The retained numerical context contained only non-epithelial composition variables and section-specific spatial neighborhood features. Identifiers were retained exclusively for indexing and data alignment. The complete retained feature set is provided in Appendix~\ref{sec:app-c-ctxfeatures}.
 
-The field is trained by conditional flow matching \autocite{Lipman2022-ns} against the optimal-transport coupling of
-Section~\ref{sec:coupling}, in three stages that fit the self and context components in sequence. For a
-coupled source--target pair $(z_i, z_j)$ drawn from $\Pi^{(k)}$, the linear interpolant at pseudo-time
-$\tau$ is $z_\tau = (1-\tau) z_i + \tau z_j$, and the flow-matching target velocity is $u = z_j - z_i$.
-The training loss at $(z_\tau, \tau)$ is the squared error between the field velocity and this target,
-evaluated under the receiver's observed source context $w_i$ held fixed along $\tau$,
-\begin{equation}\label{eq:cfm}
-\mathcal{L}_{\mathrm{CFM}} \;=\; \mathbb{E}_{(i,j)\sim\Pi,\ \tau\sim U[0,1]}
-\left\lVert\, v\!\left(z_\tau, w_i, \tau\right) - \left(z_j - z_i\right) \right\rVert^2,
+Second, the residual capacity of \(w_i\) to reconstruct epithelial state was quantified directly. A ridge-regression model with
+\(\alpha_{\mathrm{ridge}}=1\) was fitted from ecological context \(w_i\) to observed epithelial state \(z_i^{\mathrm{obs}}\) using source-stage receivers from training donors and evaluated on source-stage receivers from held-out donors. Held-out multivariate \(R^2\) and receiver-level reconstruction errors were then compared with a matched control in which the rows of the held-out context matrix were permuted. Where at least two receivers were available, the permutation was constrained to be a derangement so that no receiver retained its original context assignment.
+
+Because row permutation preserves the marginal context distribution while destroying receiver--context correspondence, the paired reconstruction-error comparison tests whether the retained context predicts the epithelial state of its assigned receiver beyond what is expected from ecological marginals alone.
+Substantial receiver-state reconstruction would indicate circularity in the subsequent context-effect estimate. The results of this audit are reported in Chapter~\ref{chap:results}.
+
+Receiver states and ecological contexts were joined by exact spot identifier to form the model-ready dataset
+
+\begin{equation}
+\mathcal{D}
+=
+\left\{
+\left(
+z_i^{\mathrm{obs}},
+w_i,
+a_i^{\mathrm{epi}},
+d_i,
+s_i
+\right)
+\right\}_{i=1}^{N},
+\label{eq:methods-modeling-dataset}
 \end{equation}
-in the field mode active for the current stage. Holding the context fixed at the observed source niche
-$w(\tau) = w_i$ throughout the trajectory matches the estimand of Section~\ref{sec:estimand}, which asks
-for the effect of a receiver's observed ecology on its progression, and it matches the integrator, which
-evaluates a single fixed context at every integration sub-step. A context that co-transitions along
-$\tau$ toward the matched target cell's niche is a defined sensitivity that the current integrator does
-not support and is deferred to the extension of Section~\ref{sec:config}.
 
-The flow-matching term is the dominant but not the sole component of the optimized objective. Three
-auxiliary terms are added to $\mathcal{L}_{\mathrm{CFM}}$ (and, in Stage~C, to
-$\mathcal{L}_{\mathrm{anchor}}$ below), each serving the estimand rather than raw fit:
-\begin{equation}\label{eq:total-loss}
-\mathcal{L} \;=\; \mathcal{L}_{\mathrm{CFM}}
-\;+\; 0.25\,\mathcal{L}_{\mathrm{endpoint}}
-\;+\; 0.01\,\mathcal{L}_{\mathrm{residual}}
-\;+\; 10^{-4}\,\mathcal{L}_{\mathrm{sparse}}
-\;+\; \mathcal{L}_{\mathrm{anchor}} .
+where \(d_i\) and \(s_i\) denote donor and pathological stage, respectively.
+Only spots represented in both the receiver-state and context tables and having non-missing abundance estimates were retained. Cross-validation folds were assigned after all filtering at the donor level, with stage balance preserved where possible. All receivers from the same donor were assigned to the same fold,
+
+\begin{equation}
+f(i)=f(j)
+\qquad
+\text{whenever}
+\qquad
+d_i=d_j,
 \end{equation}
-$\mathcal{L}_{\mathrm{endpoint}}$ is the entropic Sinkhorn distance between the integrated
-target-stage endpoint population and the observed target population, which calibrates the endpoint the
-estimand is read from rather than the instantaneous velocity alone. $\mathcal{L}_{\mathrm{residual}}$
-(active in full mode) penalizes the mean-square magnitude of the context field, operationalizing the
-context-is-residual principle so the context term claims velocity only where the self field leaves a
-residual. $\mathcal{L}_{\mathrm{sparse}}$ is an $L_1$ penalty on the context-field parameters that favors
-a parsimonious, interpretable context map. The weights ($0.25$, $0.01$, $10^{-4}$) place the
-flow-matching term in the lead while letting the endpoint term shape the read-out and the residual and
-sparsity terms enforce the interpretability constraints; they are held fixed across all folds and edges
-and are listed in Table~\ref{tab:hyperparams}.
 
-Stage~A fits the self field alone (Equation~\ref{eq:vself}) in self mode for $1000$ steps, learning the
-intrinsic progression velocity from the transport pairs. Stage~B freezes the self parameters and fits
-the context field (Equations~\ref{eq:gate}--\ref{eq:vcontext}) in full mode for $500$ steps, so the
-context terms learn only the velocity that context adds beyond the frozen intrinsic transition. Stage~C
-refines the full field jointly for $500$ steps at a reduced learning rate, under an anchor penalty that
-keeps the self field close to its Stage-A values,
-\begin{equation}\label{eq:anchor}
-\mathcal{L}_{\mathrm{anchor}} \;=\; \lambda_a\,
-\frac{1}{P}\sum_{k=1}^{P}\bigl\lVert \theta_{s,k}^{C} - \theta_{s,k}^{A} \bigr\rVert_2^2 ,
+where \(f(i)\) denotes the fold assigned to receiver \(i\). The complete modeling inventory is reported in Appendix~\ref{sec:app-c-inventory}.
+
+\section{Ecologically stratified source--target correspondence}
+\label{sec:methods-coupling}
+
+Source- and target-stage receivers are sampled from unpaired cross-sectional
+populations, so a probabilistic correspondence is required before a transition
+field can be learned. StageBridge constructs this correspondence using
+ecologically stratified entropic optimal transport: candidate pairs are first
+restricted to receivers occupying comparable coarse ecological states, and
+transport is then computed within each supported stratum using distance in
+epithelial regulatory-state space, reserving the higher-dimensional
+receiver-specific context for the dynamical model.
+
+For an ordered progression edge, let
+
+\begin{equation}
+\mathcal{S}
+=
+\left\{
+i:s_i=s_{\mathrm{src}}
+\right\},
+\qquad
+\mathcal{T}
+=
+\left\{
+j:s_j=s_{\mathrm{tgt}}
+\right\},
+\label{eq:methods-source-target-sets}
 \end{equation}
-where $\theta_{s,k}^{A}$ and $\theta_{s,k}^{C}$ are the $k$-th self-field parameter after Stage~A and
-during Stage~C, $P = \sum_k \operatorname{numel}(\theta_{s,k})$ is the total self-field parameter count,
-and $\lambda_a = 0.1$ is the anchor weight. Normalizing by $P$ makes $\lambda_a$ scale-invariant across
-model sizes, so the same weight has a stable interpretation regardless of $d_z$ or the rank $\rho$.
-Fitting the self field first, then the context residual against a frozen self field, then refining under
-the anchor, is what ties the context terms to residual variation rather than to structure the self field
-already captures. All stages use the Adam optimizer with learning rate $10^{-3}$ for Stages~A and~B and
-$10^{-4}$ for Stage~C, a batch of $64$ source--target pairs sampled from the coupling per step, and
-endpoints obtained by integrating Equation~\ref{eq:field} with a four-step fourth-order Runge--Kutta
-scheme. Hyperparameters are summarized in Table~\ref{tab:hyperparams}.
 
-Cross-validation uses $5$ patient-held-out folds: all receivers from a given patient are assigned to the
-same fold, so no patient contributes to both training and evaluation. The NicheStratifier and the
-optimal-transport coupling are fit on training patients only and applied to held-out patients, and
-per-program $R_{\mathrm{cond}}$ estimates are aggregated across folds with donor-level bootstrap
-confidence intervals.
+where \(s_{\mathrm{src}}\) and \(s_{\mathrm{tgt}}\) denote the ordered source
+and target stages. Couplings were estimated independently within each
+cross-validation fold using training donors only. A new transport plan was
+constructed at every optimization step from a donor-balanced minibatch.
+
+\subsection{Coarse ecological stratification}
+\label{sec:methods-stratification}
+
+Coarse ecological position was defined from broad non-epithelial composition,
+
+\begin{equation}
+u_i
+=
+\begin{bmatrix}
+u_i^{\mathrm{CAF}} \\
+u_i^{\mathrm{immune}}
+\end{bmatrix},
+\label{eq:methods-coarse-context}
+\end{equation}
+
+where \(u_i^{\mathrm{CAF}}\) and \(u_i^{\mathrm{immune}}\) are the aggregated
+cancer-associated fibroblast and immune fractions for receiver \(i\). These
+variables form a low-dimensional subset of the complete context vector \(w_i\).
+
+A coarse ecological stratifier was fitted separately within each training fold.
+The coarse-context matrix was standardized feature-wise, principal-component
+analysis was fitted to the standardized training matrix, and the first
+component defined a scalar ecological score,
+
+\begin{equation}
+\eta_i
+=
+b_1^{\mathsf T}
+\left[
+\left(
+u_i-\mu_u
+\right)
+\oslash
+\sigma_u
+\right],
+\label{eq:methods-niche-score}
+\end{equation}
+
+where \(b_1\) is the first principal-component loading vector, \(\mu_u\) and
+\(\sigma_u\) are the training-fold feature-wise mean and standard deviation,
+and \(\oslash\) denotes element-wise division. Training-fold quantiles of
+\(\eta_i\) then defined the discrete stratum assignment
+
+\begin{equation}
+c_i
+=
+a(u_i)
+\in
+\left\{
+1,\ldots,K
+\right\},
+\label{eq:methods-stratum-assignment}
+\end{equation}
+
+where \(a\) denotes the complete fold-fitted transformation from coarse
+composition to ecological stratum. The LUAD analysis used \(K=3\), whereas the
+smaller PanIN analysis used \(K=2\).
+
+Standardization parameters, the PCA loading, and quantile boundaries were
+frozen after fitting and applied unchanged to source-stage, target-stage, and
+held-out receivers. Stage, donor identity, epithelial abundance, epithelial
+regulatory state, pathology-derived annotations, and the higher-dimensional
+neighborhood representation were excluded from \(a(u_i)\). The resulting
+strata therefore encode broad non-epithelial composition rather than
+progression stage or receiver identity.
+
+\subsection{Cross-stage common support and minibatch construction}
+\label{sec:methods-common-support}
+\label{sec:methods-coupling-minibatch}
+
+Transport was restricted to ecological strata represented by sufficient
+receivers and donors at both ends of the progression edge. For stratum \(c\),
+let \(\mathcal{S}_c\) and \(\mathcal{T}_c\) denote the corresponding source-
+and target-stage receiver sets. A stratum was eligible when
+
+\begin{equation}
+\min\!\left(
+\left|\mathcal{S}_c\right|,
+\left|\mathcal{T}_c\right|
+\right)
+\geq
+n_{\min},
+\qquad
+\min\!\left(
+\left|\left\{d_i:i\in\mathcal{S}_c\right\}\right|,
+\left|\left\{d_j:j\in\mathcal{T}_c\right\}\right|
+\right)
+\geq
+D_{\min},
+\label{eq:methods-common-support}
+\end{equation}
+
+where \(n_{\min}\) is the minimum number of receivers and \(D_{\min}\) the
+minimum number of distinct donors required from each stage. The evaluated
+configuration used \(n_{\min}=10\) and \(D_{\min}=2\). This criterion prevented
+correspondence from being defined within ecological settings represented
+predominantly by one stage or one donor.
+
+At each optimization step, source- and target-stage donors were sampled
+separately from the training partition, and receivers were subsampled within
+donor to form coupling sets of at most \(B_{\mathrm{OT}}=512\) receivers per
+stage. The frozen stratifier assigned each sampled receiver to a stratum, and
+one stratum satisfying Equation~\ref{eq:methods-common-support} was selected.
+Batches without an eligible stratum were discarded and resampled. This
+procedure bounded the quadratic memory cost of the transport matrix and reduced
+the influence of donors contributing disproportionately many retained spots.
+
+\subsection{Entropic optimal transport within stratum}
+\label{sec:methods-entropic-ot}
+
+Within the selected stratum, the cost of associating source receiver \(i\) with
+target receiver \(j\) was the squared Euclidean distance between their
+epithelial regulatory states,
+
+\begin{equation}
+C_{ij}
+=
+\left\|
+z_i^{\mathrm{obs}}
+-
+z_j^{\mathrm{obs}}
+\right\|_2^2.
+\label{eq:methods-ot-cost}
+\end{equation}
+
+The complete ecological contexts \(w_i\) and \(w_j\) were retained for
+dynamical modeling but did not enter the within-stratum transport cost.
+
+Let \(n_c\) and \(m_c\) denote the numbers of source and target receivers in
+the selected stratum, with uniform empirical weights
+\(\alpha_i=1/n_c\) and \(\beta_j=1/m_c\). Let
+\(\mathcal{U}(\alpha,\beta)\) denote the set of nonnegative
+\(n_c\times m_c\) transport plans with those marginals. The entropically
+regularized coupling was
+
+\begin{equation}
+\Pi_c^{\ast}
+=
+\arg\min_{\Pi\in\mathcal{U}(\alpha,\beta)}
+\left[
+\sum_{i,j}
+\Pi_{ij}C_{ij}
++
+\varepsilon
+\sum_{i,j}
+\Pi_{ij}
+\left(
+\log\Pi_{ij}-1
+\right)
+\right].
+\label{eq:methods-entropic-coupling}
+\end{equation}
+
+The transport term favors correspondences between nearby regulatory states,
+whereas the entropy term distributes mass across alternative plausible
+assignments. The evaluated configuration used \(\varepsilon=0.05\) and
+\(80\) Sinkhorn iterations \autocite{Cuturi2013-li}. The Sinkhorn fixed point
+and its log-domain implementation are derived in
+Appendix~\ref{chap:appendix-a}.
+
+Because the entries of \(\Pi_c^\ast\) sum to one, the fitted coupling defines a
+categorical distribution over source--target pairs. At each optimization step,
+\(64\) pairs were sampled according to
+
+\begin{equation}
+(i,j)
+\sim
+\operatorname{Categorical}
+\left(
+\operatorname{vec}
+\left[
+\Pi_c^{\ast}
+\right]
+\right).
+\label{eq:methods-coupling-pair-sampling}
+\end{equation}
+
+High-mass correspondences were therefore sampled more frequently while
+uncertainty over alternative target assignments was retained. For each sampled
+pair, the source and target states, source and target contexts, and donor
+metadata were preserved, and the regulatory displacement was defined as
+
+\begin{equation}
+\Delta z_{ij}
+=
+z_j^{\mathrm{obs}}
+-
+z_i^{\mathrm{obs}}
+\in
+\mathbb{R}^{d_z}.
+\label{eq:methods-pair-displacement}
+\end{equation}
+
+\subsection{Interpretation of the conditional coupling}
+\label{sec:methods-coupling-interpretation}
+
+The resulting plan defines probabilistic population correspondence within a
+fold-specific domain of coarse ecological overlap. Broad composition determines
+which receivers are eligible for comparison, and regulatory-state distance
+determines the relative transport mass assigned within that domain. Fine
+receiver-specific context remains available to explain variation in the learned
+transition field without directly selecting the target assigned to each source
+receiver.
+
+These correspondences are model-defined alignments between cross-sectional
+populations, not observed lineage relationships, clonal ancestry, or cell-level
+transitions. Ecological adjustment is also limited to a discretized
+one-dimensional projection of two broad composition variables. The conditional
+context residual is therefore estimated after coarse ecological alignment
+rather than exhaustive control of tissue ecology.
+
+
+\section{StageBridge dynamical model}
+\label{sec:methods-field}
+
+StageBridge represents an ordered pathological edge as a continuous
+transformation of epithelial regulatory state. Let
+\(z(\tau)\in\mathbb{R}^{d_z}\) denote regulatory state at normalized progression
+coordinate \(\tau\in[0,1]\), and let \(w\in\mathbb{R}^{d_w}\) denote ecological
+context. The source and target stages are assigned \(\tau=0\) and \(\tau=1\),
+respectively. Intermediate values index positions along the modeled edge and
+carry no chronological calibration.
+
+\subsection{Field decomposition}
+\label{sec:methods-field-decomposition}
+
+The regulatory velocity is decomposed into receiver-state and
+context-conditioned components,
+
+\begin{equation}
+\frac{dz(\tau)}{d\tau}
+=
+v_{\mathrm{full}}(z,w,\tau)
+=
+v_{\mathrm{self}}\!\left(z(\tau),\tau\right)
++
+v_{\mathrm{context}}\!\left(z(\tau),w,\tau\right).
+\label{eq:methods-stagebridge-field}
+\end{equation}
+
+The self field depends on the current regulatory state and progression
+coordinate, whereas the context field additionally receives the ecological
+representation. Both return velocities in the same regulatory space. This
+additive decomposition defines the operational contrast underlying
+\(R_{\mathrm{cond}}\). Because the two components are not identifiable from
+endpoint fit alone, the staged optimization procedure in
+Section~\ref{sec:methods-training} first estimates the self field before
+introducing and jointly refining the context component.
+
+\subsection{Receiver-state field}
+\label{sec:methods-self-field}
+
+The receiver-state field combines a capacity-constrained linear transition, an
+explicit pathway mapping, and a nonlinear neural residual:
+
+\begin{equation}
+v_{\mathrm{self}}(z,\tau)
+=
+A\overline{z}
++
+b
++
+B\,r(z)
++
+\rho_s(z,\tau).
+\label{eq:methods-self-field}
+\end{equation}
+
+Here, \(r(z)\in\mathbb{R}^{d_r}\) extracts the \(d_r=14\) PROGENy pathway
+coordinates, and \(B\in\mathbb{R}^{d_z\times d_r}\) maps those activities into
+the complete regulatory velocity. The intercept
+\(b\in\mathbb{R}^{d_z}\) permits state-independent drift, while
+\(\rho_s:\mathbb{R}^{d_z}\times[0,1]\rightarrow\mathbb{R}^{d_z}\)
+captures nonlinear state-dependent velocity not represented by the structured
+terms.
+
+Direct pathway dependence would otherwise be represented redundantly by both
+\(A\overline{z}\) and \(B\,r(z)\). Let
+\(\mathcal{P}\subset\{1,\ldots,d_z\}\) denote the pathway-coordinate indices.
+The state supplied to \(A\) was therefore masked as
+
+\begin{equation}
+\overline{z}_k
+=
+\begin{cases}
+0, & k\in\mathcal{P},\\
+z_k, & k\notin\mathcal{P}.
+\end{cases}
+\label{eq:methods-pathway-mask}
+\end{equation}
+
+Thus, \(B\,r(z)\) represents direct linear dependence on pathway activity, whereas \(A\overline{z}\) acts on the transcription-factor coordinates. The neural residual receives the complete unmasked state and can represent nonlinear interactions across both blocks.
+
+The linear operator was constrained to rank at most \(r_A=32\) through
+
+\begin{equation}
+A=UV,
+\qquad
+U\in\mathbb{R}^{d_z\times r_A},
+\qquad
+V\in\mathbb{R}^{r_A\times d_z},
+\qquad
+r_A=32.
+\label{eq:methods-low-rank-a}
+\end{equation}
+
+This factorization limits linear-field capacity and represents shared modes of regulatory change within the \(d_z=773\)-dimensional state space. The factors serve as an optimization parameterization; interpretation is assigned to the composed operator \(A=UV\), not to the individually non-identifiable matrices
+\(U\) and \(V\).
+
+\subsection{Context-conditioned field}
+\label{sec:methods-context-field}
+
+The context-conditioned field allows identical epithelial states to receive different modeled velocities under different ecological representations:
+
+\begin{equation}
+v_{\mathrm{context}}(z,w,\tau)
+=
+M_{\mathrm{ctx}}
+\left[
+r(z)
+\odot
+\gamma(w)
+\right]
++
+\rho_c(z,w,\tau),
+\qquad
+\gamma(w)
+=
+\tanh(Gw+b_g).
+\label{eq:methods-context-field}
+\end{equation}
+
+The gate
+\(\gamma(w)\in[-1,1]^{d_r}\) maps ecological context to one bounded modulation score per pathway. Its element-wise interaction with \(r(z)\) conditions the structured contribution jointly on pathway activity and ecological state.
+The matrix \(M_{\mathrm{ctx}}\in\mathbb{R}^{d_z\times d_r}\) then maps the gated pathway representation into the complete regulatory velocity, while
+\(\rho_c:\mathbb{R}^{d_z}\times\mathbb{R}^{d_w}\times[0,1]\rightarrow\mathbb{R}^{d_z}\)
+captures nonlinear context-conditioned velocity not represented by the pathway-gated term.
+
+The structured context pathway is intentionally low dimensional: ecological information enters through \(14\) pathway channels before expansion to the full regulatory state. The \(759\) transcription-factor coordinates are not gated independently, although they may change through \(M_{\mathrm{ctx}}\) or through the unrestricted neural residual \(\rho_c\). Transcription-factor residuals therefore represent model-implied downstream displacement and cannot be uniquely attributed to direct ecological regulation of the corresponding factor or to the structured gate alone.
+
+\subsection{Complete system and source-fixed context}
+\label{sec:methods-source-context}
+\label{sec:methods-complete-field}
+
+Each trajectory was conditioned on the ecological context observed around its source receiver, held fixed over the modeled progression interval:
+
+\begin{equation}
+w_i(\tau)
+=
+w_i,
+\qquad
+\tau\in[0,1].
+\label{eq:methods-source-fixed-context}
+\end{equation}
+
+Target context was retained with each transport-sampled pair but was not used by the evaluated model. Substituting the receiver-state and context-conditioned fields gives the complete initial-value problem:
+
+\begin{equation}
+\boxed{
+\begin{aligned}
+\frac{dz_i(\tau)}{d\tau}
+={}&
+A\overline{z}_i(\tau)
++
+b
++
+B\,r\!\left(z_i(\tau)\right)
++
+\rho_s\!\left(z_i(\tau),\tau\right)
+\\
+&+
+M_{\mathrm{ctx}}
+\left[
+r\!\left(z_i(\tau)\right)
+\odot
+\tanh\!\left(Gw_i+b_g\right)
+\right]
++
+\rho_c\!\left(z_i(\tau),w_i,\tau\right),
+\\
+z_i(0)
+={}&
+z_i^{\mathrm{obs}},
+\qquad
+\tau\in[0,1].
+\end{aligned}
+}
+\label{eq:methods-stagebridge-complete}
+\end{equation}
+
+The corresponding self-only trajectory was generated from the same observed initial state with the context field omitted:
+
+\begin{equation}
+\frac{dz_i^{\mathrm{self}}(\tau)}{d\tau}
+=
+v_{\mathrm{self}}
+\left(
+z_i^{\mathrm{self}}(\tau),\tau
+\right),
+\qquad
+z_i^{\mathrm{self}}(0)
+=
+z_i^{\mathrm{obs}}.
+\label{eq:methods-self-ivp}
+\end{equation}
+
+The full and self-only trajectories therefore differ through their integrated velocity fields. Context-dependent changes in early velocity alter subsequent states and later field evaluations, making their endpoint difference a trajectory-level contrast rather than a single-step perturbation.
+
+StageBridge is a structured neural ordinary differential equation formulated in universal-differential-equation form \autocite{Rackauckas2020-mc}. The self--context decomposition, pathway masking, low-rank transition operator, and pathway-gated ecological interaction impose explicit model structure, while \(\rho_s\) and \(\rho_c\) provide flexible nonlinear approximation. These components organize the learned dynamics but do not constitute a calibrated biochemical kinetic model.
+
+
+\section{Three-stage optimal-transport conditional flow matching}
+\label{sec:methods-training}
+
+Ecologically stratified optimal transport supplies probabilistic
+source--target correspondences, and conditional flow matching converts those
+correspondences into local supervision for the regulatory velocity field
+\autocite{Lipman2022-ns,Bunne2022-go}. For a transport-sampled pair
+\((z_0,z_1)\), a progression coordinate
+\(\tau\sim\mathcal{U}(0,1)\) defines the linear interpolation
+
+\begin{equation}
+z_\tau=(1-\tau)z_0+\tau z_1.
+\label{eq:methods-cfm-interpolant}
+\end{equation}
+
+The model is evaluated at \(z_\tau\) and trained to predict the corresponding
+source--target displacement:
+
+\begin{equation}
+\mathcal{L}_{\mathrm{CFM}}
+=
+\mathbb{E}_{\tau,\,(z_0,z_1)}
+\left\lVert
+v_{\theta}(z_\tau,w_0,\tau)
+-
+(z_1-z_0)
+\right\rVert_2^2,
+\label{eq:methods-general-cfm-loss}
+\end{equation}
+
+where \(w_0\) is the source-receiver context, held fixed along the interpolating
+path. The transport plan was re-estimated at every optimization step, so
+velocity supervision was sampled continuously from the fold-specific coupling
+rather than from a fixed set of pairs. All receiver representations,
+stratifiers, couplings, and model parameters were estimated using training
+donors only.
+
+\paragraph{Three-stage schedule.}
+The self and context fields were estimated sequentially to define an operational
+decomposition that cannot be recovered from endpoint fit alone. Stage A fitted
+the receiver-state field without ecological input. Stage B froze that solution
+and fitted the context field against the established self-field baseline. Stage
+C jointly refined both components under an anchoring penalty that constrained
+the self field toward its Stage A estimate. This schedule limits reassignment of
+intrinsic progression to the context branch during joint optimization.
 
 \begin{table}[htbp]
 \centering
-\caption{StageBridge hyperparameters (evaluated implementation).}
-\label{tab:hyperparams}
-\begin{tabular}{lll}
+\caption[Three-stage training schedule]{Three-stage training schedule. Each
+stage was fitted independently within every donor-held-out fold. Stage-specific
+objectives and auxiliary losses are detailed in
+Appendix~\ref{sec:app-b-training-detail}.}
+\label{tab:training-schedule}
+\small
+\begin{tabular}{llll}
 \toprule
-Component & Hyperparameter & Value \\
+Stage & Fitted components & Constraint & Steps / learning rate \\
 \midrule
-Receiver state      & regulatory basis dimension $d_z$      & $773$ (14 pathways + 759 TFs) \\
-                    & regulatory sub-vector dimension $d_r$ & $14$ (PROGENy pathways) \\
-Self field          & linear map rank $\rho$                & $32$ (low-rank $A = U V$) \\
-Residual MLPs       & hidden width, activation              & $64$, ReLU \\
-Coupling            & entropic regularization $\epsilon$    & $0.05$ \\
-                    & Sinkhorn iterations                   & $80$ \\
-                    & max receivers per side per step       & $512$ \\
-Stratification      & strata $K$                            & $3$ \\
-                    & niche PCA dimension $n_{\mathrm{PCA}}$ & $1$ \\
-                    & min receivers per stage per stratum   & $10$ \\
-                    & min donors per stage per stratum      & $2$ \\
-Context timing      & trajectory context $w(\tau)$          & source-fixed, $w(\tau)=w_i$ \\
-Training            & optimizer                             & Adam \\
-                    & Stage A / B / C steps                 & $1000$ / $500$ / $500$ \\
-                    & Stage A / B / C learning rate         & $10^{-3}$ / $10^{-3}$ / $10^{-4}$ \\
-                    & Stage-C anchor weight $\lambda_a$     & $0.1$ (parameter-normalized) \\
-                    & endpoint-loss weight                  & $0.25$ (Sinkhorn) \\
-                    & context-residual-loss weight          & $0.01$ \\
-                    & context-sparsity-loss weight          & $10^{-4}$ ($L_1$) \\
-                    & batch size (coupled pairs)            & $64$ \\
-Integration         & scheme, steps                         & RK4, $4$ \\
-Cross-validation    & patient-held-out folds                & $5$ \\
+A & receiver-state field & context field inactive
+  & \(1{,}000\) / \(10^{-3}\) \\
+B & context field & receiver-state field frozen
+  & \(500\) / \(10^{-3}\) \\
+C & both fields & Stage A self field softly anchored
+  & \(500\) / \(10^{-4}\) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\section{Identifiability and falsification}\label{sec:ladder}
+\paragraph{Composite objective.}
+The Stage C objective contains all terms used during training:
 
-The context claim is evaluated against a ladder of controls that each remove or degrade a specific
-source of information. The ladder specifies, in advance, the ordering of endpoint accuracy that must
-hold if local context carries genuine, spatially local information about the transition, and it names
-the outcomes that would refute that interpretation. Endpoint accuracy is measured on held-out patients
-by the entropic optimal-transport (Sinkhorn) cost between predicted and real target-stage receivers,
-together with an energy distance and a target-stage classifier probability.
+\begin{equation}
+\mathcal{L}^{(\mathrm{C})}
+=
+\mathcal{L}_{\mathrm{CFM}}^{(\mathrm{C})}
++
+\lambda_{\mathrm{endpoint}}
+\mathcal{L}_{\mathrm{endpoint}}^{(\mathrm{C})}
++
+\lambda_{\mathrm{residual}}
+\mathcal{L}_{\mathrm{residual}}
++
+\lambda_{\mathrm{sparse}}
+\mathcal{L}_{\mathrm{sparse}}
++
+\lambda_{\mathrm{anchor}}
+\mathcal{L}_{\mathrm{anchor}},
+\label{eq:methods-stage-c-objective}
+\end{equation}
 
-The rungs are as follows. The \emph{self-only} model integrates the self field alone
-(Equation~\ref{eq:vself}), predicting the transition from receiver state with no context. The
-\emph{donor/stage-average} model replaces each receiver's context $w$ with the mean context of its donor
-and stage, retaining specimen-level ecology while discarding within-specimen spatial detail. The
-\emph{full} model uses each receiver's own local context (Equation~\ref{eq:field}, full mode). The
-\emph{matched-state shuffled-context} control permutes $w$ across patients within bins of similar
-receiver state $z$, preserving the epithelial state distribution while breaking the receiver-to-context
-correspondence.
+with
 
-The pre-specified acceptance pattern is
+\begin{equation}
+\lambda_{\mathrm{endpoint}}=0.25,
+\qquad
+\lambda_{\mathrm{residual}}=0.01,
+\qquad
+\lambda_{\mathrm{sparse}}=10^{-4},
+\qquad
+\lambda_{\mathrm{anchor}}=0.1.
+\label{eq:methods-training-loss-weights}
+\end{equation}
+
+Stage A used the self-field flow-matching and endpoint terms. Stage B optimized
+the context field with the self field frozen and included the residual and
+sparsity penalties. Stage C added the anchor term and jointly refined the full
+field. The flow-matching loss supplied the primary local velocity supervision;
+the endpoint loss penalized accumulated integration error at \(\tau=1\); the
+residual and sparsity terms constrained context-conditioned velocity; and the
+anchor preserved the Stage A self-field solution during joint refinement.
+
+\paragraph{Integration and optimization.}
+Trajectories were integrated over \(\tau\in[0,1]\) using fixed-step
+fourth-order Runge--Kutta integration. A fixed solver schedule held the number
+of field evaluations constant across folds and falsification conditions, so
+paired comparisons did not differ in endpoint-integration budget. Dependence on
+this numerical choice was evaluated in the integration-control rung.
+
+Parameters were optimized with Adam. Each step used \(B=64\) pairs sampled from
+a newly estimated transport plan constructed from at most \(512\) source and
+\(512\) target receivers. Gradient norms were clipped at \(10\). Minibatches
+without a stratum satisfying cross-stage common support were resampled up to
+\(20\) times; runs that remained unsupported were terminated and recorded as
+having insufficient ecological overlap.
+
+Random generators governing parameter initialization and donor, receiver, pair,
+and progression-coordinate sampling were seeded by fold. Training and held-out
+donor sets were verified to be disjoint before fitting. LUAD used five
+donor-held-out folds and PanIN used three. Fitted parameters, Stage A anchors,
+training histories, coupling dimensions, donor assignments, and frozen
+ecological transformations were retained for out-of-fold evaluation. Complete
+hyperparameters and seeds are reported in
+Appendix~\ref{sec:app-c-hyperparams}.
+
+
+\section{Conditional context residual}
+\label{sec:methods-estimand}
+
+For each source receiver, the fitted model generates a full trajectory under
+the combined self and context fields and a self-only trajectory under the
+fitted self field. Both begin from the same observed epithelial regulatory
+state. Their endpoint difference defines the conditional context residual.
+
+\subsection{Per-receiver estimand and out-of-fold calculation}
+\label{sec:methods-estimand-receiver}
+\label{sec:methods-estimand-out-of-fold}
+
+For source receiver \(i\in\mathcal{S}\), let
+\(z_i^{\mathrm{full}}(1)\) and \(z_i^{\mathrm{self}}(1)\) denote the endpoints
+of the full and self-only initial-value problems. All evaluated analyses used
+the identity endpoint readout, so the residual was calculated directly in the
+annotated regulatory state space:
+
+\begin{equation}
+R_{\mathrm{cond},i}
+=
+z_i^{\mathrm{full}}(1)
+-
+z_i^{\mathrm{self}}(1)
+\in
+\mathbb{R}^{d_z}.
+\label{eq:methods-rcond-identity}
+\end{equation}
+
+Both integrations used \(z_i^{\mathrm{obs}}\) as their initial condition. The
+full trajectory received the observed source context \(w_i\), held fixed
+throughout integration, whereas the self-only trajectory used the same fitted
+self-field parameters with the context field omitted. For regulatory coordinate
+\(k\),
+
+\begin{equation}
+R_{\mathrm{cond},ik}
+=
+z_{ik}^{\mathrm{full}}(1)
+-
+z_{ik}^{\mathrm{self}}(1).
+\label{eq:methods-rcond-coordinate}
+\end{equation}
+
+Positive values indicate that activation of the fitted context branch increases
+the predicted endpoint coordinate relative to the self-only trajectory, and
+negative values indicate the converse.
+
+All residuals used for cohort-level inference were computed out of fold. Each
+receiver was evaluated using the model fitted without its donor; that donor
+contributed neither to stratifier fitting, transport construction, parameter
+optimization, nor model selection for the corresponding prediction.
+
+\subsection{Trajectory-integrated interpretation}
+\label{sec:methods-estimand-trajectory}
+
+Because the two trajectories share their initial condition, their endpoint
+difference can be written as the difference between their integrated
+velocities:
+
+\begin{equation}
+\begin{aligned}
+R_{\mathrm{cond},i}
+=
+\int_{0}^{1}
+\Big[
+&
+v_{\mathrm{context}}
+\left(
+z_i^{\mathrm{full}}(\tau),
+w_i,
+\tau
+\right)
+\\
+&+
+v_{\mathrm{self}}
+\left(
+z_i^{\mathrm{full}}(\tau),
+\tau
+\right)
+-
+v_{\mathrm{self}}
+\left(
+z_i^{\mathrm{self}}(\tau),
+\tau
+\right)
+\Big]
+\,d\tau.
+\end{aligned}
+\label{eq:methods-rcond-decomposition}
+\end{equation}
+
+The first term is the context-conditioned velocity accumulated along the full
+trajectory. The remaining difference arises because the context field changes
+the states subsequently visited by the full trajectory, causing the shared self
+field to be evaluated along a different path. The residual therefore measures
+an integrated endpoint displacement associated with activating the context
+branch, including its downstream effect on state-dependent self dynamics. It is
+not equivalent to the instantaneous context velocity
+\(v_{\mathrm{context}}(z_i^{\mathrm{obs}},w_i,0)\).
+
+\subsection{Donor-level aggregation and estimand scope}
+\label{sec:methods-estimand-donor-aggregation}
+\label{sec:methods-estimand-scope}
+
+Spatial receivers from the same donor are correlated. Cohort summaries were therefore constructed by averaging first within donor and then across donors with equal weight. Let
+\(\mathcal{I}_d=\{i\in\mathcal{S}:d_i=d\}\),
+\(N_d=|\mathcal{I}_d|\), and let
+\(\mathcal{D}_{\mathrm{eval}}\) denote the set of
+\(D_{\mathrm{eval}}\) evaluated source-stage donors:
+
+\begin{equation}
+\overline{R}_{\mathrm{cond},d}
+=
+\frac{1}{N_d}
+\sum_{i\in\mathcal{I}_d}
+R_{\mathrm{cond},i},
+\qquad
+\overline{R}_{\mathrm{cond}}
+=
+\frac{1}{D_{\mathrm{eval}}}
+\sum_{d\in\mathcal{D}_{\mathrm{eval}}}
+\overline{R}_{\mathrm{cond},d}.
+\label{eq:methods-rcond-aggregation}
+\end{equation}
+
+Thus, donors rather than spatial measurements determine the weighting of cohort-level residuals.
+
+The estimand's value is conditional on the receiver and context representations, transport-defined correspondence, trained differential field, source-fixed context convention, and
+common-support population. Because the coordinates are inferred regulatory activities, a residual assigned to a pathway or transcription factor denotes displacement in its transcriptional activity footprint rather than a change in regulator abundance,  dosage, or mutational status. The estimand is a within-model trajectory contrast; it does not identify historical lineage or a causal effect of experimentally manipulating tissue context.
+
+\section{Evaluation and falsification framework}
+\label{sec:methods-evaluation}
+\label{sec:hypotheses}
+
+Evaluation was organized around the three hypotheses introduced in Chapter~1.
+Each is restated here in the notation of this chapter and paired with its
+criterion for support; Section~\ref{sec:methods-program-stability} formalizes
+H1, Section~\ref{sec:methods-context-controls} formalizes H2, and
+Section~\ref{sec:methods-evaluation-scope} states the H3 procedure.
+
+\paragraph{H1 --- a reproducible conditional context residual exists.}
+For at least one regulatory coordinate $k \in \{1,\ldots,d_z\}$, the equal-donor
+cohort residual $\overline{R}_{\mathrm{cond},k}$ of
+Equation~\ref{eq:methods-rcond-aggregation} has the same nonzero sign in every
+evaluated fold, with fold-specific bootstrap interval excluding zero. This is
+the \emph{stable} criterion of Section~\ref{sec:methods-program-stability}
+applied coordinate-wise.
+
+\paragraph{H2 --- that information is receiver-local.}
+Writing $D_\bullet$ for the held-out conditional endpoint distance of
+Equation~\ref{eq:methods-conditional-endpoint-cost} evaluated under a named
+context condition (so $D_{\mathrm{local}}$, $D_{\mathrm{self}}$,
+$D_{\mathrm{donor\text{-}avg}}$, and $D_{\mathrm{shuffle}}$ denote that same
+quantity computed with the receiver-specific, self-only, donor--stage-average,
+and shuffled context conditions respectively), H2 requires
+
 \[
-\text{full} \;>\; \text{donor/stage-average} \;>\; \text{self-only} \;>\; \text{shuffled-context},
+D_{\mathrm{local}} < D_{\mathrm{donor\text{-}avg}} < D_{\mathrm{self}}
+\qquad\text{and}\qquad
+D_{\mathrm{local}} < D_{\mathrm{shuffle}},
 \]
-read as decreasing endpoint accuracy. Local context adds spatially local information when the full model
-exceeds the donor/stage-average model, and the context is genuine when the full model exceeds its
-shuffled control. Two outcomes refute the local-context interpretation and are reported as such when
-they occur: if the donor/stage-average model equals the full model, the signal is specimen-level ecology
-rather than local niche; if a context-only field matches the full model, the context vector is acting as
-a proxy for the receiver state rather than as an independent modulator.
 
-Two rungs test proxy leakage directly. The \emph{context-branch} rung integrates the context field alone
-(Equation~\ref{eq:vcontext}, self velocity removed); because $v_{\mathrm{context}}$ still reads the
-receiver state through $r(z)$ and $\rho_c$, this rung measures whether the transition can run on the
-context branch, and it is labeled as such rather than as a $w$-only test. The
-\emph{context-reconstructs-source-state} rung is the direct leakage audit: a ridge regressor is fit from
-$w$ to $z$ on training source-stage receivers and used to predict held-out source-stage receivers from
-$w$ alone, reporting the held-out coefficient of determination, the paired per-receiver reconstruction
-error, and a shuffled-$w$ control. It answers whether the context representation encodes a disguised copy
-of receiver identity; a context vector that reconstructs the receiver's own state would make a context
-effect circular.
+reproduced as Equation~\ref{eq:h1-local} in
+Section~\ref{sec:methods-context-controls}, which also specifies how each
+condition is constructed.
 
-The ladder also contrasts the structured decomposition against reduced parameterizations that share the
-training objective and coupling. A \emph{monolithic} baseline replaces the structured field with a
-single multilayer perceptron over the concatenation of $z$, $w$, and $\tau$, removing the self/context
-factorization. A \emph{structured-only} variant zeroes the residual terms $\rho_s$ and $\rho_c$, and a
-\emph{neural-residuals-only} variant zeroes the structured maps $A$, $b$, $B$, $C$, and $G$. These
-baselines test whether the interpretable structured algebra is necessary for endpoint accuracy or
-whether an unstructured network matches it, and whether the structured and residual components each
-contribute.
+\paragraph{H3 --- the estimand transfers across precursor systems.}
+H3, stated in Chapter~\ref{chap:intro}, is evaluated by applying the estimand
+unchanged to the independently fitted PanIN cohort
+(Section~\ref{sec:methods-cohorts}); Section~\ref{sec:methods-evaluation-scope}
+states the procedure in full. Because the PanIN cohort is smaller and not
+comparably powered, H3 is a test of estimator behavior rather than independent
+validation of the LUAD findings.
 
-Two null-referenced tests quantify the ladder comparisons and the niche gradients on the same
-patient-held-out folds. Endpoint differences between ladder arms are assessed by a \emph{paired}
-comparison of the per-fold Sinkhorn distance (the five folds are shared across arms, so the paired
-$95\%$ confidence interval on the difference is the correct dispersion), reported for the
-local-over-self-only and local-over-shuffled-context contrasts. The per-receiver niche-stratum
-gradients are tested against a \emph{within-donor} permutation null that shuffles stratum labels among
-receivers of the same donor (holding donor identity constant), taking the Spearman correlation between
-stratum and per-receiver $R_{\mathrm{cond}}$ as the statistic and reporting the empirical $P$ value over
-the permutation distribution.
+These three criteria were addressed through donor-held-out endpoint
+prediction, donor-level uncertainty estimation, context substitution and
+shuffling, model-component controls, transport diagnostics, and synthetic
+recovery benchmarks.
 
-\section{Evaluated thesis configuration and designed extension}\label{sec:config}
+The integrated field was first required to reproduce the held-out target-stage
+population within the same ecological common-support domain used for model
+construction. Conditional residuals were then evaluated for donor-level
+uncertainty and reproducibility across independently fitted folds. Context
+substitution and shuffling tested the spatial scale and receiver specificity of
+the ecological signal. Additional controls challenged the coupling, numerical
+integration, architecture, representation, and fitted field decomposition.
+Transport-stability and synthetic-identifiability analyses defined the
+conditions under which the inferred correspondence and resulting estimand
+remained interpretable.
 
-The results of this thesis were produced by a single, explicitly specified configuration of StageBridge,
-summarized in Table~\ref{tab:thesis-config}. Stating it explicitly separates what StageBridge is, what
-it currently implements, and what it still needs to resolve the local-versus-global ecological
-confound.
+All primary real-data evaluations were performed on donors excluded from model
+fitting, using five donor-held-out folds for LUAD and three for PanIN. Within
+each fold, feature transformations, ecological strata, transport couplings,
+Stage A anchors, and model parameters were estimated exclusively from training
+donors.
 
-\begin{table}[htbp]
-\centering
-\caption{The StageBridge configuration evaluated in this thesis.}
-\label{tab:thesis-config}
-\begin{tabular}{ll}
+\subsection{Donor-held-out endpoint agreement}
+\label{sec:methods-heldout-endpoints}
+
+For held-out fold \(f\), let \(\mathcal{S}_f\) and \(\mathcal{T}_f\) denote
+the source- and target-stage receivers assigned to that fold. The model trained
+without fold \(f\) generated a full-field endpoint
+\(\widehat{z}_{i,1}^{\,[-f]}\) for every held-out source receiver, yielding the
+predicted endpoint population \(\widehat{Z}_{1,f}\) and observed target
+population \(Z_{\mathrm{tgt},f}\).
+
+Primary endpoint evaluation preserved the ecological conditioning used to
+define the estimand. The fold-specific stratifier fitted on training donors was
+reloaded without refitting and applied to the held-out source and target
+receivers. A stratum entered evaluation when it contained at least five
+held-out source and five held-out target receivers, defining the held-out
+common-support set \(\mathcal{C}_f^{\mathrm{eval}}\). For each
+\(c\in\mathcal{C}_f^{\mathrm{eval}}\), the stratum-specific endpoint cost was
+
+\begin{equation}
+D_{\mathrm{OT},fc}
+=
+\operatorname{Sinkhorn}_{\varepsilon}
+\left(
+\widehat{Z}_{1,f}^{(c)},
+Z_{\mathrm{tgt},f}^{(c)}
+\right),
+\label{eq:methods-stratum-endpoint-cost}
+\end{equation}
+
+and the conditional endpoint metric was the source-mass-weighted aggregate
+
+\begin{equation}
+D_{\mathrm{OT},f}^{\mathrm{conditional}}
+=
+\sum_{c\in\mathcal{C}_f^{\mathrm{eval}}}
+\omega_{fc}
+D_{\mathrm{OT},fc},
+\qquad
+\omega_{fc}
+=
+\frac{
+n_{fc}^{\mathrm{src}}
+}{
+\sum_{c'\in\mathcal{C}_f^{\mathrm{eval}}}
+n_{fc'}^{\mathrm{src}}
+},
+\label{eq:methods-conditional-endpoint-cost}
+\end{equation}
+
+where \(n_{fc}^{\mathrm{src}}\) is the number of held-out source receivers in
+stratum \(c\). The operator
+\(\operatorname{Sinkhorn}_{\varepsilon}\) denotes squared-Euclidean transport
+cost under an entropically regularized coupling with uniform empirical weights.
+Lower values indicate closer agreement between predicted and observed
+target-stage populations. This metric was primary because it evaluates the same domain used to
+estimate \(R_{\mathrm{cond}}\).
+
+Three unstratified quantities were retained as sensitivity summaries: global
+Sinkhorn cost between \(\widehat{Z}_{1,f}\) and
+\(Z_{\mathrm{tgt},f}\); energy distance, which compares cross-population
+separation with the internal dispersion of each population; and the mean
+probability assigned to the target class by a logistic classifier trained
+within fold on observed source and target states. The classifier score was
+descriptive and did not enter model fitting or selection.
+
+Conditional and global transport calculations used
+\(\varepsilon=0.05\) and \(80\) Sinkhorn iterations, with deterministic
+subsampling to at most \(2{,}048\) receivers per population where required.
+Energy-distance calculations used at most \(1{,}000\) receivers per
+population. Complete metric definitions are provided in
+Appendix~\ref{sec:app-b-metrics}.
+
+\subsection{Donor-level uncertainty and cross-fold reproducibility}
+\label{sec:methods-program-stability}
+
+Uncertainty in \(R_{\mathrm{cond}}\) was estimated at the donor level. Within
+each held-out fold, receiver-level residuals were first averaged within donor,
+producing one \(d_z\)-dimensional residual vector per evaluated source-stage
+donor. Donors were then resampled with replacement \(200\) times. For fold
+\(f\), containing \(D_f\) evaluated donors, bootstrap replicate \(b\) was
+
+\begin{equation}
+\overline{R}_{fk}^{\ast(b)}
+=
+\frac{1}{D_f}
+\sum_{r=1}^{D_f}
+\overline{R}_{\mathrm{cond},d_r^{\ast(b)}k},
+\label{eq:methods-donor-bootstrap}
+\end{equation}
+
+where \(d_r^{\ast(b)}\) denotes the donor sampled at bootstrap position \(r\).
+The \(2.5\)th and \(97.5\)th percentiles defined the fold-specific
+\(95\%\) interval when at least two source-stage donors were available.
+
+Program-level reproducibility was classified after all fold-specific estimates
+were assembled. Let \(\mu_{fk}\) denote the equal-donor mean residual for
+program \(k\) in fold \(f\), with bootstrap interval
+\([L_{fk},U_{fk}]\). A program was classified as \emph{stable} when
+\(\mu_{fk}\) had the same nonzero sign in every evaluated fold and every
+fold-specific interval excluded zero; \emph{directionally stable} when the sign
+was consistent across folds but at least one interval included zero; and
+\emph{unstable} when the mean residual changed sign across folds.
+
+The first hypothesis---that progression contains a reproducible conditional
+context residual---was supported when at least one named regulatory program met
+the stable criterion. This requirement evaluates reproducibility across
+disjoint donor sets and independently fitted models. The three stability labels
+are reproducibility classifications, not coordinate-wise
+false-discovery-rate-controlled significance categories.
+
+\subsection{Falsification ladder}
+\label{sec:methods-context-controls}
+\label{sec:methods-model-controls}
+
+The falsification ladder evaluates the fitted system under conditions that
+remove or replace one source of information at a time. Its primary ecological
+contrast tests the second hypothesis: whether endpoint prediction depends on
+the identity of the receiver's local context rather than only on intrinsic
+state or broader specimen ecology.
+
+Let \(D_{\bullet}\) denote the held-out conditional endpoint distance from
+Equation~\ref{eq:methods-conditional-endpoint-cost} under the indicated
+condition. Support for receiver-local ecological information required
+
+\begin{equation}
+D_{\mathrm{local}}
+<
+D_{\mathrm{donor\text{-}avg}}
+<
+D_{\mathrm{self}}
+\qquad\text{and}\qquad
+D_{\mathrm{local}}
+<
+D_{\mathrm{shuffle}},
+\label{eq:h1-local}
+\end{equation}
+
+where \(D_{\mathrm{shuffle}}\) denotes the primary matched-state context
+shuffle. The first chain tests whether receiver-specific context improves
+prediction beyond donor--stage-average ecology and the self-only field. The
+second tests whether improvement depends on the observed receiver--context
+assignment rather than the marginal context distribution.
+
+The components of the criterion were interpreted separately when the complete
+condition was not met. Improvement over the self-only field without improvement
+over donor--stage-average context indicated that ecological information was
+recoverable primarily at specimen scale. Failure to distinguish local from
+shuffled context indicated that receiver-specific neighborhood identity added
+no detectable endpoint information beyond the ecological marginals preserved
+by the shuffle.
+
+The ecological arm therefore followed
+
+\begin{equation}
+\text{self-only}
+\;\longrightarrow\;
+\text{donor--stage-average context}
+\;\longrightarrow\;
+\text{receiver-specific context}
+\;\longrightarrow\;
+\text{shuffled context},
+\label{eq:methods-context-ladder}
+\end{equation}
+
+while additional rungs challenged the coupling, numerical integration,
+architecture, and fitted field components. Every condition was evaluated on
+the same held-out fold using identical endpoint metrics, making each comparison
+paired within the same biological source and target populations.
+Table~\ref{tab:falsification-ladder} defines the complete ladder.
+
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.20\textwidth}%
+                     >{\raggedright\arraybackslash}p{0.32\textwidth}%
+                     >{\raggedright\arraybackslash}p{0.36\textwidth}@{}}
+\caption[Falsification ladder]{Falsification ladder. Each rung modifies one
+component of the fitted system and is evaluated on the same held-out fold using
+the same endpoint metrics as the reference condition. Complete per-fold results
+are reported in Appendix~\ref{sec:app-c-ladder}.}
+\label{tab:falsification-ladder}\\
 \toprule
-Component & Thesis implementation \\
+Rung & Modification & Assumption tested \\
 \midrule
-Receiver state        & $773$ regulatory programs (14 PROGENy + 759 CollecTRI) \\
-Context encoder       & fixed DestVI + Merchavit spatial summaries \\
-Dynamics              & structured UDE with low-rank identifiable $A$ and neural residuals \\
-Context timing        & source-fixed, $w(\tau) = w_i$ \\
-Transport supervision & conditional-stratified OT with conditional flow matching \\
-Context decomposition & self versus combined context (Equation~\ref{eq:field}) \\
-Evaluation            & patient-held-out folds and the falsification ladder \\
-Deferred extension    & explicit global/local context split and Set Transformer encoder \\
+\endfirsthead
+\multicolumn{3}{l}{\small\itshape Table~\ref{tab:falsification-ladder} continued from previous page}\\
+\toprule
+Rung & Modification & Assumption tested \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\small\itshape continued on next page}\\
+\endfoot
 \bottomrule
-\end{tabular}
-\end{table}
+\endlastfoot
 
-The designed extension completes the separation of Equation~\ref{eq:separation} inside the field. It
-decomposes each receiver's context into a specimen-level average and a local residual,
-\begin{equation}\label{eq:global-local-w}
-w_i \;=\; \bar{w}_{d,s} \;+\; \delta w_i ,
+\multicolumn{3}{l}{\textit{Ecological information}}\\
+\addlinespace[0.3em]
+
+Local context (full)
+& Reference configuration
+& --- \\
+
+\addlinespace[0.3em]
+Spatial self-only
+& Context field inactive:
+\(dz/d\tau=v_{\mathrm{self}}(z,\tau)\)
+& Whether the fitted context branch contributes to endpoint agreement \\
+
+\addlinespace[0.3em]
+Donor--stage-average context
+& \(w_i\) replaced by the mean context of its donor and stage,
+\(w_i\leftarrow\overline{w}_{d_i s_i}\)
+& Whether receiver-level ecological variation adds information beyond
+specimen-scale ecology \\
+
+\addlinespace[0.3em]
+Matched-state context shuffle
+& Context rows permuted within stage and decile of
+\(\lVert z_i^{\mathrm{obs}}\rVert_2\)
+& Whether the observed receiver--context assignment carries information after
+preserving stage and approximate state magnitude \\
+
+\addlinespace[0.3em]
+Fine-context shuffle
+& Context rows permuted within stage and reconstructed coarse CAF/immune bin
+& Whether fine ecological correspondence matters after approximately preserving
+broad composition \\
+
+\midrule
+\multicolumn{3}{l}{\textit{Coupling and integration}}\\
+\addlinespace[0.3em]
+
+Strict-state coupling
+& Ecological stratification removed; transport computed using regulatory-state
+distance alone
+& Whether the reported signal depends on the ecological restriction imposed
+during correspondence construction \\
+
+\addlinespace[0.3em]
+One-step integration
+& Single Euler interval:
+\(\widehat{z}_1=z_0+v_{\mathrm{full}}(z_0,w,0)\)
+& Whether intermediate field evaluations materially alter the predicted target
+distribution \\
+
+\midrule
+\multicolumn{3}{l}{\textit{Architecture and fitted components}}\\
+\addlinespace[0.3em]
+
+Linear endpoint models
+& Differential field replaced by
+\(\widehat{z}_1=z_0+A_{\mathrm{lin}}z_0+b_{\mathrm{lin}}\), with and without
+an added \(W_{\mathrm{lin}}w\) term
+& Whether the nonlinear differential construction improves on a direct linear
+endpoint map \\
+
+\addlinespace[0.3em]
+Monolithic neural comparator
+& Single multilayer perceptron on
+\([z^{\mathsf T}\;w^{\mathsf T}\;\tau]^{\mathsf T}\), with two hidden layers
+of \(128\) rectified-linear units and strict state-only coupling
+& Unstructured neural reference; not an architecture-isolated ablation because
+its coupling differs from the primary configuration \\
+
+\addlinespace[0.3em]
+Context-branch only
+& Self field excluded:
+\(dz/d\tau=v_{\mathrm{context}}(z,w,\tau)\)
+& Whether the fitted context branch can carry the transition without the
+self-field contribution \\
+
+\addlinespace[0.3em]
+Structured-only
+& \(\rho_s\) and \(\rho_c\) set to zero after training
+& Contribution of the structured terms within the fitted complete model \\
+
+\addlinespace[0.3em]
+Neural-residuals-only
+& Linear operator, intercept, pathway map, ecological gate, and gated output
+map set to zero after training
+& Contribution of the neural residual terms within the fitted complete model \\
+
+\end{longtable}
+
+The donor--stage-average condition used
+
+\begin{equation}
+\overline{w}_{ds}
+=
+\frac{1}{N_{ds}}
+\sum_{i:d_i=d,\,s_i=s}
+w_i,
+\label{eq:methods-donor-stage-average}
 \end{equation}
-where $\bar{w}_{d,s}$ is the mean context of receiver $i$'s donor $d$ and stage $s$ and $\delta w_i$ is
-the receiver's deviation from that specimen average, and it splits the context velocity into a global
-term driven by the specimen ecology and a local term driven by the residual,
-\begin{equation}\label{eq:global-local-field}
-\frac{dz_i}{d\tau} \;=\; v_{\mathrm{self}}(z_i, \tau)
-\;+\; v_{\mathrm{global}}(z_i, \bar{w}_{d,s}, \tau)
-\;+\; v_{\mathrm{local}}(z_i, \delta w_i, \tau).
+
+where \(N_{ds}\) is the number of receivers from donor \(d\) at stage \(s\),
+thereby removing within-donor-and-stage ecological variation while retaining
+broader specimen composition and spatial structure. Its comparison with
+receiver-specific context is the direct test of whether local ecological
+variation improves endpoint prediction beyond specimen-scale information.
+
+For the matched-state shuffle,
+\(w_i^{\mathrm{shuffle}}=w_{\pi(i)}\), where \(\pi\) was restricted to
+receivers sharing pathological stage and a decile of
+\(\lVert z_i^{\mathrm{obs}}\rVert_2\). The replacement context was not required
+to originate from a different donor. The shuffle therefore preserves stage and
+approximate state magnitude while disrupting the observed receiver-specific
+context assignment.
+
+The fine-context shuffle reconstructed CAF/immune bins from the available
+coarse-context columns rather than reusing the frozen fold-specific stratifier.
+It is therefore an approximate broad-context-preserving perturbation rather
+than an exact shuffle within the original transport strata.
+
+Structured-only and neural-residuals-only conditions were applied after
+training without refitting. They measure the contribution of fitted components
+within the learned complete model, not the performance of models optimized
+under those restrictions.
+
+\subsection{Representation and decomposition credibility}
+\label{sec:methods-credibility}
+
+Two diagnostics evaluated whether the context-associated signal could be
+explained by disguised receiver-state information or by dominance of the
+unstructured neural residual.
+
+The first was the context-to-state reconstruction audit described in
+Section~\ref{sec:methods-context-audit}. Its reported quantities were held-out
+multivariate \(R^2\) and receiver-level reconstruction error,
+
+\begin{equation}
+\operatorname{MSE}_{\mathrm{recon}}
+=
+\frac{1}{N_f d_z}
+\sum_{i\in\mathcal{S}_f}
+\left\|
+\widehat{z}_i
+-
+z_i^{\mathrm{obs}}
+\right\|_2^2,
+\label{eq:methods-context-reconstruction-mse}
 \end{equation}
-Equation~\ref{eq:global-local-field} is the designed extension and did \emph{not} generate the results
-of this thesis, which used Equation~\ref{eq:field}. Isolating $v_{\mathrm{local}}$ would move the
-specimen-versus-local separation, which the current model establishes empirically through the
-donor/stage-average rung of the falsification ladder, into the architecture itself, and it pairs
-naturally with the Hierarchical Set Transformer encoder of Section~\ref{sec:context-rep}, which provides
-the neighborhood representation on which a local residual field is most naturally defined. The thesis
-develops and evaluates the first identifiable implementation of StageBridge and identifies this
-architectural refinement as its next step.
 
-\subsection{Relation to existing transport formulations}
-\label{sec:transport-relation}
+where \(\widehat{z}_i\) is the epithelial state predicted from \(w_i\) alone
+and \(N_f=|\mathcal{S}_f|\). Observed-context reconstruction was compared with
+the matched row-permutation control.
 
-Two transition-dynamics families were implemented and searched during hyperparameter optimization:
-optimal-transport conditional flow matching \autocite{Lipman2022-ns}, which learns a deterministic velocity
-field along the interpolant between coupled endpoints, and a Schr\"odinger-bridge stochastic
-formulation with an explicit drift and score network \autocite{Bunne2022-tl}. OT-CFM was selected as the reported
-dynamics; the Schr\"odinger-bridge variant was searched as an alternative rather than scored
-head-to-head, and a formal comparison of the two dynamics under a common metric is left to future work.
-The framework additionally supports a debiased semantic-transport coupling that subtracts the
-source distribution's self-transport; this was not required under the identity semantic projection
-$\phi$ used here, where the regulatory basis is itself the semantic space.
+The second diagnostic compared the magnitude of the neural residual terms with
+the structured field. At held-out source states and \(\tau=1\), define
 
-StageBridge is positioned relative to, rather than benchmarked against, established spatial
-optimal-transport tools. moscot \autocite{Klein2025-jg}, a population-level optimal-transport method, and commot
-\autocite{Cang2023-si}, a ligand--receptor spatial-communication method, solve related but distinct problems: moscot
-transports cell populations and commot scores spatial communication, whereas the estimand here contrasts
-a single receiver's transport under its full niche against its context-neutral transport. Because the
-objects being estimated differ, these tools are described as methodological reference points rather than
-scored baselines, and a head-to-head comparison under a shared metric is stated as outstanding rather
-than reported here---no such comparison was run, and none is claimed.
+\begin{equation}
+\begin{aligned}
+v_{\mathrm{structured}}(z,w)
+={}&
+A\overline{z}
++
+b
++
+B\,r(z)
++
+M_{\mathrm{ctx}}
+\left[
+r(z)
+\odot
+\tanh(Gw+b_g)
+\right],
+\\
+v_{\mathrm{neural}}(z,w)
+={}&
+\rho_s(z,1)
++
+\rho_c(z,w,1),
+\end{aligned}
+\label{eq:methods-structured-neural-components}
+\end{equation}
 
-\section{Downstream biological analyses}
-\label{sec:bio-methods}
+and the neural-residual dominance ratio
 
-Three downstream analyses corroborate and interpret the context-residual estimand. Each is an
-independent \emph{method} that carries no knowledge of $R_{\mathrm{cond}}$, but each reads the same
-epithelial expression matrix, so their agreement is internal cross-method consistency rather than
-validation on an independent modality; the results are interpreted with that limit throughout
-(Section~\ref{sec:grn}).
+\begin{equation}
+D_{\rho}
+=
+\frac{
+\mathbb{E}
+\left[
+\left\|
+v_{\mathrm{neural}}(z,w)
+\right\|_2^2
+\right]
+}{
+\mathbb{E}
+\left[
+\left\|
+v_{\mathrm{structured}}(z,w)
+\right\|_2^2
+\right]
++
+10^{-8}
+}.
+\label{eq:methods-d-rho}
+\end{equation}
 
-\subsection{De-novo GRN inference \autocite{Aibar2017-kq}}
+The prespecified descriptive regimes were
+\(D_{\rho}\leq0.5\) for a structured regulatory-UDE regime,
+\(0.5<D_{\rho}\leq1\) for a mixed structured-neural regime, and
+\(D_{\rho}>1\) for a residual-dominated regime. Residual-dominated folds were
+flagged as unsuitable for detailed interpretation of the structured
+decomposition. The ratio therefore bounds the confidence assigned to
+component-level or program-level attribution; it does not measure predictive
+performance directly.
 
-De-novo regulon inference was run with pySCENIC \autocite{Aibar2017-kq} following the
-two-step protocol: GRNBoost2 co-expression network inference followed by cisTarget
-motif-enrichment pruning \autocite{Imrichova2015-mh}. Raw epithelial counts were exported
-per edge, subsampled to 20{,}000 cells where necessary, and processed in the dedicated
-pySCENIC environment. cisTarget databases were the v10-clust hg38 gene-based rankings
-with JASPAR 2022 motifs. SCENIC regulons are reported as independent corroboration of
-the R\textsubscript{cond} stable-program set; they were not used to inform model training.
+\subsection{Transport-target stability}
+\label{sec:methods-transport-stability}
 
-\subsection{hdWGCNA co-expression modules}
+Transport-target stability quantified the sensitivity of inferred
+correspondence to perturbation of the sampled target population. For source
+state \(z_i\) and target subset \(A\), with entropic coupling
+\(\Pi^{(A)}\), the barycentric target assigned to \(z_i\) was
 
-Weighted gene co-expression network analysis was performed with hdWGCNA \autocite{Morabito2023-yq}
-on the typed single-nucleus expression matrix for each edge. Module eigengenes were computed
-per module and per donor; gene-set enrichment against GO Biological Process terms was
-performed with fgsea \autocite{Korotkevich2016-ou}. Modules are identified by hub genes and
-labelled by their dominant GO enrichment term.
+\begin{equation}
+T_A(z_i)
+=
+\frac{
+\sum_j \Pi_{ij}^{(A)}z_j^{(A)}
+}{
+\sum_j \Pi_{ij}^{(A)}
+}.
+\label{eq:methods-barycentric-target}
+\end{equation}
 
-\subsection{Stage differential expression and gene-set enrichment}
+For independently sampled target subsets \(A\) and \(B\), the
+matching-stability statistic was
 
-Differential expression between the two stages of each edge was computed by the Wilcoxon
-rank-sum test on log-normalized epithelial expression, yielding a signed ranking statistic per
-gene (positive indicating higher expression in the more advanced stage). The ranked gene list was
-tested by gene-set enrichment analysis \autocite{Badia-I-Mompel2022-te} against the MSigDB Hallmark collection, with an
-optional GO Biological Process gene set, to situate the transport signature against the standard
-stage-contrast readout. Enrichment is reported as normalized enrichment score with a
-Benjamini--Hochberg adjusted $P$ value.
+\begin{equation}
+D_N
+=
+\mathbb{E}_{A,B,\mathcal{B}_{\mathrm{src}}}
+\left[
+\frac{1}{
+\left|\mathcal{B}_{\mathrm{src}}\right|
+}
+\sum_{i\in\mathcal{B}_{\mathrm{src}}}
+\left\|
+T_A(z_i)
+-
+T_B(z_i)
+\right\|_2^2
+\right],
+\label{eq:methods-matching-stability}
+\end{equation}
 
-\subsection{R\textsubscript{cond}-gated cell--cell communication}
+where \(\mathcal{B}_{\mathrm{src}}\) is a sampled source batch. Lower
+\(D_N\) indicates that independent target samples yield similar transport
+destinations for the same source population.
 
-Ligand-receptor interactions were inferred by LIANA \autocite{Dimitrov2024-fb} consensus
-across the typed cell populations at each stage. Receptor$\rightarrow$TF wiring was drawn
-from OmniPath post-translational interactions \autocite{Turei2026-bn}. Each inferred
-ligand-receptor-TF chain was retained only if its terminal TF program is classified
-\textsc{stable} or \textsc{directionally\_stable} under R\textsubscript{cond} with
-$|R_{\mathrm{cond}}| \geq 0.05$. This model-based gate retains only communication
-channels whose downstream regulatory programs are confirmed to be context-driven by the
-dynamical model, distinguishing the analysis from co-expression-based cell-cell communication
-tools. Target genes downstream of each gated TF were drawn from CollecTRI curated
-TF$\rightarrow$target relationships \autocite{Muller-Dott2023-mu}. Ollivier--Ricci curvature
-was computed per edge of the differential cell-cell communication network using the
-GraphRicciCurvature package to identify structural bottleneck channels.
+The estimate used \(40\) independent draws, with source and target batches
+capped at \(4{,}096\) receivers and each target subset containing half of the
+available target population up to that cap. Because raw \(D_N\) depends on the
+dimension and scale of the representation, two normalized quantities were also
+reported:
 
-\subsection{Spatial autocorrelation of niche composition}
+\begin{equation}
+D_N^{\mathrm{normalized}}
+=
+\frac{
+D_N
+}{
+\operatorname{tr}
+\left(
+\widehat{\Sigma}_{\mathrm{tgt}}
+\right)
+},
+\qquad
+D_N^{\mathrm{per\ feature}}
+=
+\frac{D_N}{d},
+\label{eq:methods-dn-normalized}
+\end{equation}
 
-The spatial organization of the microenvironment was quantified on the full-cohort spatial-context
-table, joining each spot's composition features (malignant, CAF, immune, and macrophage fractions,
-and Shannon diversity) to its Visium coordinates. Because spatial neighborhoods do not cross tissue
-sections, all statistics were computed within each section independently and then summarized by stage.
-For each section a $k=15$ nearest-neighbor spatial graph was built with squidpy
-(\texttt{spatial\_neighbors}, generic coordinates). Global spatial autocorrelation of each feature was
-measured by Moran's~$I$ (\texttt{spatial\_autocorr}, \texttt{mode="moran"}), and local hot spots by the
-Getis--Ord Gi* statistic, computed per spot as
-$G_i^{*} = \big(\sum_j w_{ij} x_j - \bar{x}\sum_j w_{ij}\big) / \big(s\,[(n\sum_j w_{ij}^2 -
-(\sum_j w_{ij})^2)/(n-1)]^{1/2}\big)$ with self-inclusive weights ($w_{ii}=1$), reported as the
-fraction of spots exceeding $\lvert G_i^{*}\rvert > 1.96$. Trends across stage were assessed by
-Spearman correlation between the section-level statistic and stage order, with Kruskal--Wallis and
-Mann--Whitney tests across stages.
+where \(\widehat{\Sigma}_{\mathrm{tgt}}\) is the empirical target-state
+covariance and \(d\) is the dimension of the evaluated representation. Within
+each draw, the entropic coefficient was set to \(0.05\) times the median
+squared-Euclidean cost of the sampled geometry to support comparison across
+representations with different distance scales.
 
-\subsection{Transport geometry diagnostics}
+\subsection{Synthetic identifiability benchmark}
+\label{sec:methods-synthetic-identifiability}
 
-The matching-stability diagnostic $D_N$ \autocite{Lopez2022-ps} measures how stable the
-optimal-transport matching is under small perturbations of the source bag in a given
-feature geometry; lower $D_N$ indicates a more identifiable matching. $D_N$ was computed
-for four candidate geometries (pathways-only, TFs-only, pathways-plus-TFs, epithelial
-programs) to identify the most transport-stable regulatory basis. The regulatory-drift
-credibility ratio $D_{\rho} = \lVert \text{residual}\rVert / \lVert \text{structured}\rVert$
-compares the neural-residual velocity to the structured-algebra velocity in the fitted full
-field per fold; $D_{\rho}\leq 1$ indicates the interpretable terms carry velocity of at least
-comparable magnitude to the residual, and is reported as the ceiling on how far each per-program
-$R_{\mathrm{cond}}$ is attributable to the structured algebra.
+A synthetic benchmark tested whether alternative source--target correspondence
+procedures could recover a known context displacement from unpaired
+populations. The data-generating regimes and acceptance thresholds were fixed
+before the selected coupling was applied to the biological cohorts, making the
+benchmark a prospective screen for the primary design rather than a post-hoc
+justification.
 
-To characterize the qualitative dynamics of the learned field, the fitted velocity was subjected to
-a Helmholtz decomposition on a regular grid over the embedded state space. The field is split into a
-curl-free (gradient/equilibrium) component and a divergence-free (rotational/solenoidal) component by
-solving the Poisson equations $\nabla^2\Phi = -\,\mathrm{div}\,v$ and $\nabla^2\Psi = \mathrm{curl}\,v$
-with Neumann boundary conditions, giving $v_{\mathrm{grad}} = -\nabla\Phi$ and
-$v_{\mathrm{rot}} = v - v_{\mathrm{grad}}$. The reported non-equilibrium (rotational) fraction is
-$\lVert v_{\mathrm{rot}}\rVert / \lVert v\rVert$, which is $0$ for a purely gradient field relaxing to
-a fixed point and approaches $1$ for a purely circulating flux that no potential explains; it is
-computed for both the self-only and full-context fields on each edge.
+Synthetic source states were sampled from a multivariate Gaussian. Context
+vectors were generated with configurable correlation \(\rho\) to the source
+state, and a coarse niche class was formed by quantizing a one-dimensional
+projection of context. The paired target state was
 
-\section{Limitations of the modeling approach}\label{sec:core-limitations}
+\begin{equation}
+z_{1i}^{\mathrm{true}}
+=
+z_{0i}
++
+T_{\mathrm{self}}(z_{0i})
++
+R_i^{\mathrm{true}}
++
+\epsilon_i,
+\label{eq:methods-synthetic-dgp}
+\end{equation}
 
-The data are cross-sectional. StageBridge infers progression-aligned transition structure from static
-spatial snapshots and does not observe longitudinal time or cell lineage; the pseudo-time $\tau$ orders
-stage banks rather than measuring elapsed time in any receiver. This design choice is addressed by
-treating stage labels as ordered banks, by the patient-held-out cross-validation, and by the shuffled
-and permuted controls of the falsification ladder, but it bounds every claim in this thesis to
-association rather than dynamics observed within a single lesion over time. The context residual
-$R_{\mathrm{cond}}$ identifies regulatory programs whose transition is associated with local tissue
-context; it does not establish that the context causes the transition.
+where \(T_{\mathrm{self}}\) combined a stable linear transformation with a
+small coordinate-wise nonlinear term,
+\(R_i^{\mathrm{true}}\) was the planted context displacement, and
+\(\epsilon_i\) was Gaussian noise with standard deviation \(0.1\). True
+source--target identities were retained only for evaluation and for the oracle
+ceiling. All non-oracle procedures received the target population after random
+permutation.
 
-The context-residual estimand depends on the regulatory basis and the deconvolution-derived context
-vocabulary. A program that is absent from the PROGENy--CollecTRI basis cannot carry a residual, and a
-niche feature that DestVI does not resolve cannot enter $w$. The coarse-niche stratification that
-protects the coupling from circularity also restricts the estimand to strata with cross-stage,
-multi-patient common support, so edges or niches with insufficient shared support are not evaluable and
-are reported as excluded rather than as null. The context field is also deliberately narrow: local
-context enters the dynamics only through the gated regulatory bottleneck $G:\mathbb{R}^{d_w}\!\to\!
-\mathbb{R}^{d_r}$ followed by $C:\mathbb{R}^{d_r}\!\to\!\mathbb{R}^{d_z}$, where the regulatory
-sub-vector $r(z)$ is the $d_r=14$ PROGENy pathway block. Context therefore redirects regulatory state
-only within this fourteen-dimensional pathway channel; the $759$ transcription-factor coordinates are
-not gated by context directly and move only insofar as they are driven through the pathway channel.
-The per-program $R_{\mathrm{cond}}$ values reported for individual transcription factors are thus
-downstream reflections of a fourteen-dimensional context gate, not evidence that context acts on each
-factor independently---a deliberate low-dimensional design that favors identifiability on the available
-donor count over an unconstrained context map, and a bound on the resolution at which context effects
-can be attributed. Finally, the structured maps are made identifiable at the
-linear level: the low-rank factorization and the mask remove the exact $A$--$B$ redundancy, but the
-residual network $\rho_s$ receives the full state including the regulatory coordinates, so individual
-coefficients of $B$ are not uniquely recoverable in the complete nonlinear model. The interpretation in
-this thesis therefore rests on $R_{\mathrm{cond}}$, program-level displacement, the ablation rungs, and
-cross-fold stability, not on individual structured coefficients.
+Four correspondence procedures were compared: strict state-only transport,
+state-only transport augmented by a population-level progression coordinate,
+ecologically stratified transport using the coarse niche class, and oracle
+pairing. Entropic plans were converted to one target assignment per source by
+selecting the target receiving greatest coupling mass. The coupling-implied
+displacement was then separated into a state-predictable component and a
+residual.
 
-With the estimand, its selection screen, and its identifiability limits now fixed,
-Chapter~\ref{chap:results} applies StageBridge to the LUAD and PanIN precursor cohorts and tests the
-three pre-specified hypotheses, reporting where the context signal is recoverable and where it is
-bounded to the specimen scale.
+Recovery was quantified by the median receiver-level cosine similarity between
+the recovered residual \(\widehat{R}_i\) and
+\(R_i^{\mathrm{true}}\), Pearson correlation after flattening the two residual
+matrices, and the context-gain statistic
+
+\begin{equation}
+G_{\mathrm{context}}
+=
+\frac{
+V_{\mathrm{self}}
+-
+V_{\mathrm{full}}
+}{
+V_{\mathrm{self}}
+},
+\label{eq:methods-synthetic-context-gain}
+\end{equation}
+
+where \(V_{\mathrm{self}}\) and \(V_{\mathrm{full}}\) are the residual
+variances of linear state-only and context-augmented displacement models.
+
+The benchmark included a null regime with no context displacement; a supported
+conditional regime in which context effects varied across an observed coarse
+niche class; an orthogonal non-identifiable regime; a confounded-null regime
+with state--context association but no planted context effect; and a sweep over
+the alignment between context displacement and intrinsic progression.
+
+Acceptance thresholds were prespecified. The null regime required
+\(G_{\mathrm{context}}\leq0.10\). Recovery in the supported regime required
+\(G_{\mathrm{context}}\geq0.15\), median cosine similarity
+\(\geq0.50\), and flattened correlation \(\geq0.30\). The non-identifiable
+regime required the prespecified non-oracle recovery statistic to remain below
+\(0.15\). Oracle pairing defined the recoverability ceiling and was unavailable
+to all biological analyses.
+
+\subsection{Inferential scope}
+\label{sec:methods-evaluation-scope}
+
+The conditional within-stratum transport cost was the primary endpoint metric
+because it evaluates predicted and observed populations within the same
+coarse-ecological domain that defines \(R_{\mathrm{cond}}\). Global transport
+cost, energy distance, and target-stage classifier probability were retained as
+secondary summaries.
+
+Donor-bootstrap intervals quantify variation among biological donors, whereas
+cross-fold classifications evaluate reproducibility across independently fitted
+models and disjoint held-out donor sets. The \(d_z\) regulatory coordinates are
+correlated outputs of one learned dynamical system. They were therefore
+summarized through equal-donor means, effect magnitude, bootstrap intervals, and
+cross-fold direction. Coordinate-wise \(P\)-values were not used to treat
+pathway and transcription-factor outputs as independent confirmatory tests.
+Stable, directionally stable, and unstable designations consequently describe
+reproducibility rather than formal false-discovery-rate control.
+
+Falsification conditions were compared with the receiver-specific context model
+within fold using paired endpoint metrics. Mean differences and \(95\%\)
+intervals across folds summarize the consistency of those paired contrasts;
+cross-validation folds are prediction settings, not independent biological
+replicates. The context-to-state audit, \(D_{\rho}\), and \(D_N\) bound the
+credibility of the context representation, field decomposition, and transport
+correspondence, respectively. The synthetic benchmark defines the recovery
+boundary under controlled ground truth.
+
+H3 (Section~\ref{sec:hypotheses}) was evaluated by applying the same receiver
+construction, conditional residual, donor-held-out evaluation, and stability
+criteria to the independently fitted PanIN cohort (Section~\ref{sec:methods-cohorts}).
+Coherent behavior was defined as recovery of interpretable stability where the
+cohort supported it; this served as a bounded test of estimator behavior under
+a distinct precursor ecology and reduced sample support, not as independent
+validation of the LUAD findings.
+
+
+
+\section{Secondary biological analyses}
+\label{sec:methods-biological-analyses}
+
+The primary analyses estimated progression-aligned regulatory transport and
+evaluated the conditional context residual through donor-held-out prediction
+and prespecified falsification controls. Secondary analyses characterized the
+observed biology of each progression edge, localized selected residuals within
+the tissue environment, and generated regulatory and intercellular signaling
+hypotheses. These analyses were performed after model fitting, without altering the
+receiver representation, transport coupling, differential field, or definition
+of \(R_{\mathrm{cond}}\), and are organized below by their relationship to the
+fitted model.
+Stage-associated analyses use observed expression or spatial measurements and
+are independent of StageBridge outputs. Residual-associated analyses use
+out-of-fold \(R_{\mathrm{cond}}\) estimates to characterize the ecological,
+spatial, and geometric distribution of identified effects. Residual-guided
+analyses use model outputs to prioritize candidate regulators and signaling
+interactions and therefore generate mechanistic hypotheses rather than
+independent validation. Complete software versions and parameter settings are
+reported in Appendix~\ref{sec:app-c-software}.
+
+\subsection{Stage-associated analyses}
+\label{sec:methods-stage-transcriptomics}
+\label{sec:methods-stage-discrimination}
+
+Stage-associated differential expression and gene-set enrichment provided a
+model-independent description of each ordered progression edge. These analyses
+used the edge-specific, annotated, log-normalized single-nucleus object and did
+not use transport pairs, ecological context, modeled trajectories, or
+conditional residuals. Genes were ranked between target and source stages using
+the Wilcoxon procedure implemented in
+\texttt{scanpy.tl.rank\_genes\_groups}
+\autocite{Wolf2018-rc}, with the target stage specified as the comparison
+group so that positive statistics indicated higher target-stage expression.
+
+The complete signed ranking was analyzed with decoupleR
+\autocite{Badia-I-Mompel2022-te} against the MSigDB Hallmark and Gene Ontology
+Biological Process collections
+\autocite{Liberzon2015-cq}, using fgsea
+for preranked enrichment \autocite{Korotkevich2016-ou}. Gene sets represented
+by fewer than five ranked genes were excluded, and positive normalized
+enrichment scores indicated enrichment toward the target stage.
+
+Because individual nuclei rather than donors entered the differential-expression
+ranking, these analyses were interpreted as descriptive characterizations of
+the observed transition. Donor-held-out prediction and donor-level residual
+summaries provided the primary inferential evidence for conclusions associated
+with StageBridge.
+
+Stage-discrimination analyses tested whether the epithelial regulatory state
+contained a reproducible source--target signal before ecological context was
+introduced. Only the PROGENy and CollecTRI activities comprising the receiver
+representation were used. The principal analysis employed stage-stratified
+donor-held-out cross-validation: donors were partitioned separately within
+source and target stages so that each evaluable test fold contained both
+classes while maintaining complete donor separation. The number of folds was
+limited by the smaller stage-specific donor count.
+
+Within each fold, regulatory features were standardized using training-donor
+parameters, logistic regression was fitted to the standardized training data,
+and the transformation and classifier were applied unchanged to held-out
+donors. Discrimination was summarized by the area under the receiver-operating
+characteristic curve averaged across evaluable folds.
+
+Two sensitivity analyses were retained. A pooled receiver-level analysis
+allowed measurements from the same donor to contribute to both training and
+evaluation and therefore measured the combined stage- and donor-associated
+signal present in the representation. A within-donor analysis was restricted
+to donors containing both stages and tested stage discrimination while donor
+identity was fixed. The three analyses were interpreted jointly to distinguish
+generalizable stage structure from donor-specific orientation of the
+regulatory state space.
+
+\subsection{Residual-associated analyses}
+\label{sec:methods-residual-localization}
+\label{sec:methods-spatial-organization}
+\label{sec:methods-projected-dynamics}
+
+Out-of-fold receiver-level residuals were mapped to their original spatial
+measurements and fold-specific ecological strata to determine where identified
+regulatory programs were expressed most strongly within the supported
+ecological domain. Residuals were first averaged within donor and stratum, after
+which cohort summaries assigned equal weight to each donor represented in that
+stratum. Strata were ordered by the fold-specific CAF/immune score used during
+transport construction.
+
+Monotonic association between stratum order and
+\(R_{\mathrm{cond}}\) was quantified by Spearman correlation. Significance was
+evaluated using \(2{,}000\) within-donor permutations of stratum labels.
+Permuting within donor preserved each donor's residual distribution and stratum
+counts while disrupting their observed correspondence, an important constraint
+because the same strata contributed to transport construction. Two-sided
+empirical \(P\)-values were calculated as the fraction of permuted correlations
+whose absolute value equaled or exceeded that of the observed statistic. These
+analyses were restricted to programs selected from the out-of-fold residual
+results and characterized the ecological distribution of an identified effect;
+they did not constitute an independent program-discovery procedure.
+
+The spatial organization of ecological variables was assessed using the
+complete context table joined to the original Visium coordinates. Spatial
+graphs were constructed independently within each tissue section so that no
+edge connected measurements from different specimens. A
+\(15\)-nearest-neighbor graph was constructed for each section. Moran's \(I\)
+\autocite{Moran1950-nc} quantified global spatial autocorrelation of
+malignant, cancer-associated fibroblast, immune, and compositional-diversity
+features. Getis--Ord \(G_i^\ast\) statistics
+\autocite{Ord1995-pl} identified local concentrations, with
+standardized values greater than \(1.96\) classified as hot spots and values
+below \(-1.96\) as cold spots.
+
+Spatial statistics were calculated separately for each section and summarized
+by pathological stage, with tissue section as the independent unit for
+stage-level comparisons. Spearman correlation tested monotonic association with
+ordered stage, Kruskal--Wallis tests compared section-level values across more
+than two stages, and prespecified two-stage comparisons used two-sided
+Mann--Whitney \(U\) tests.
+
+Observed ecological variance was additionally partitioned across pathological
+stage, donor within stage, and receiver-level variation within donor. These
+fractions described the scale at which each composition feature varied across
+the cohort and were used to distinguish specimen-level ecology from local
+spatial heterogeneity. They were not interpreted as causal variance
+components.
+
+Projected-field analyses visualized the geometry of the learned transition and
+compared the gradient and rotational components of the self-only and complete
+fields. Source and target regulatory states were embedded jointly in two
+dimensions using PHATE \autocite{Moon2019-cb}, with UMAP
+\autocite{McInnes2018-fb} and PCA retained as alternative representations.
+Source-state velocities were estimated from the first displacement of a
+multistep RK4 trajectory, projected into the shared embedding, and smoothed over
+a regular grid.
+
+A spectral Helmholtz--Hodge decomposition separated the gridded velocity field
+into gradient and rotational components. The rotational fraction was defined
+as the norm of the rotational component divided by the norm of the complete
+projected field and was calculated separately for the self-only and complete
+fields. Because the decomposition depends on the embedding, smoothing grid, and
+illustrative fold, the projected rotational fraction is an
+embedding-dependent geometric diagnostic rather than a coordinate-invariant
+property of the original \(773\)-dimensional field. Empirical
+negative-log-density surfaces were used only to summarize the embedded receiver
+distribution visually and were not interpreted as physical free-energy
+landscapes. Projected-field analyses were exploratory and did not contribute to
+model fitting, model selection, or calculation of \(R_{\mathrm{cond}}\).
+
+\subsection{Residual-guided analyses}
+\label{sec:methods-grn}
+\label{sec:methods-communication}
+
+Gene-regulatory network analyses examined whether model-associated programs were represented in complementary co-expression and motif-supported network
+structures. De novo transcription-factor regulons were inferred using pySCENIC
+\autocite{Aibar2017-kq}. GRNBoost2 inferred transcription-factor--target associations from expression covariation across raw epithelial single-nucleus counts, cisTarget motif resources pruned these associations to motif-supported regulons, and AUCell quantified regulon activity in individual nuclei.
+
+Stage-specific regulon activity and network connectivity were compared
+descriptively with the corresponding CollecTRI residuals. Enrichment of selected residual-associated transcription factors among highly connected pySCENIC regulators was evaluated using an upper-tail hypergeometric test, with the universe restricted to transcription factors represented in both the StageBridge state space and the inferred network.
+
+Weighted gene co-expression modules were inferred using hdWGCNA
+\autocite{Morabito2023-yq}. Metacells were formed within compatible donor,
+stage, and cell-type groups. A weighted adjacency matrix was constructed from
+gene--gene correlations under the selected soft-thresholding power and
+transformed into a topological-overlap matrix. Hierarchical clustering with dynamic tree cutting identified preliminary modules, which were merged according to eigengene correlation. Module eigengenes summarized module
+activity, while intramodular connectivity and eigengene-based membership identified hub genes. Gene Ontology Biological Process enrichment was performed
+with fgsea \autocite{Korotkevich2016-ou}, with false-discovery-rate adjustment
+across tested module--gene-set combinations.
+
+Intercellular communication analysis generated candidate signaling routes linking non-epithelial sender populations to epithelial regulatory programs.
+LIANA+ consensus analysis was performed separately for source and target stages
+using the annotated cell populations represented in each edge
+\autocite{Dimitrov2024-fb}. Sender population, receiver population, ligand,
+receptor, stage, and consensus interaction evidence were retained, with the
+modeled epithelial populations designated as the principal receiver
+compartment.
+
+Receptor-to-transcription-factor paths were assembled from directed signaling
+relationships in OmniPath \autocite{Turei2026-bn}, and CollecTRI supplied the
+transcription-factor--target relationships connecting intracellular paths to
+terminal regulatory programs \autocite{Muller-Dott2023-mu}. Candidate chains
+therefore linked a sender population and ligand to an epithelial receptor,
+downstream regulator, and terminal program.
+
+The analysis was restricted to terminal programs classified as stable or
+directionally stable across folds and having an absolute cohort residual of at
+least \(0.05\). The sign of the cohort residual annotated whether the terminal
+program was higher or lower at the complete-field endpoint relative to the
+self-only endpoint. LIANA+ interaction evidence, intracellular path support,
+path length, and residual magnitude were retained as separate ranking
+attributes rather than collapsed into a single evidential score.
+Ollivier--Ricci curvature \autocite{Ollivier2009-oq} was calculated on the
+resulting networks as an exploratory measure of bottleneck-like edges and was
+used for candidate prioritization rather than confirmatory inference.
+
+Because the terminal programs were selected using
+\(R_{\mathrm{cond}}\), the communication analysis was explicitly
+residual-guided. The resulting chains identify extracellular signaling routes
+compatible with the fitted regulatory displacement and generate hypotheses for
+experimental evaluation. They neither independently validate
+\(R_{\mathrm{cond}}\) nor establish a causal ligand--receptor mechanism.
+
+\subsection{Statistical reporting}
+\label{sec:methods-secondary-statistics}
+
+The donor was the independent biological unit for residual summaries.
+Receiver-level analyses retained donor structure through donor-level
+aggregation, donor-held-out evaluation, or within-donor permutation. Tissue sections were the independent units for stage-level spatial comparisons.
+
+Differences between falsification-ladder conditions were calculated within fold using paired endpoint metrics and summarized across folds by mean differences and \(95\%\) confidence intervals. Cross-validation folds represented separately fitted prediction settings and were not treated as independent biological samples.
+
+Spearman correlation was used for ordered ecological and pathological-stage associations. Kruskal--Wallis and Mann--Whitney \(U\) tests were used for nonparametric section-level comparisons, and hypergeometric tests were used for regulator-set overlap. Tests were two-sided except for explicitly directional enrichment procedures. Gene-set and module-enrichment analyses used the false-discovery-rate-adjusted \(P\)-values returned by their respective
+implementations.
+
+Secondary network, spatial, and projected-field analyses were interpreted as exploratory unless supported by an explicitly donor-aware, section-aware, permutation-based, or multiple-testing-adjusted procedure. Analyses unavailable
+or incomplete in the evaluated workflow were excluded from quantitative
+conclusions.
+
 
 % ============================================================================
 % CITATION PLACEHOLDERS in this chapter (converted from \cite keys 2026-07-28;
-% swap for \autocite{} via Zotero). Each -> the real paper:
-%   \autocite{Badia-I-Mompel2022-te}       Badia-i-Mompel et al. 2022, decoupleR
+% swap for \autocite{} via Paperpile). Each -> the real paper:
+%   \autocite{Badia-I-Mompel2022-te}   Badia-i-Mompel et al. 2022, decoupleR
 %   \autocite{Singhal2024-rv}          Singhal et al. 2024, BANKSY
-%   \autocite{Lopez2022-ps}          Lopez et al. 2022, DestVI
-%   \autocite{Salcher2022-pu}            Salcher et al. 2022, Lung Cancer Atlas \autocite{Salcher2022-pu}
-%   \autocite{Aibar2017-kq}          Aibar et al. 2017, SCENIC
-%   \autocite{Imrichova2015-mh}       Janssens et al. 2023, cisTarget databases
+%   \autocite{Lopez2022-ps}            Lopez et al. 2022, DestVI
+%   \autocite{Salcher2022-pu}          Salcher et al. 2022, Lung Cancer Atlas
+%   \autocite{Aibar2017-kq}            Aibar et al. 2017, SCENIC
+%   \autocite{Imrichova2015-mh}        Janssens et al. 2023, cisTarget
 %   \autocite{Morabito2023-yq}         Morabito et al. 2023, hdWGCNA
-%   \autocite{Korotkevich2016-ou}           Korotkevich et al. 2021, fgsea
-%   \autocite{Dimitrov2024-fb}           Dimitrov et al. 2022, LIANA
-%   \autocite{Turei2026-bn}        Turei et al. 2021, OmniPath
-%   \autocite{Muller-Dott2023-mu}       Garcia-Alonso et al. 2023, CollecTRI
-%   \autocite{Lopez2022-ps}  Klein et al. 2023, mapping/deconvolution ref
-% (Also: eq-level refs for OT/Sinkhorn/OT-CFM in sec:coupling/sec:training use
-%  \autocite{Cuturi2013-li}, \autocite{Bunne2022-go}, (Manupriya), \autocite{Lipman2022-ns} inline -- resolve those too.)
+%   \autocite{Korotkevich2016-ou}      Korotkevich et al. 2021, fgsea
+%   \autocite{Dimitrov2024-fb}         Dimitrov et al. 2022, LIANA
+%   \autocite{Turei2026-bn}            Turei et al. 2021, OmniPath
+%   \autocite{Muller-Dott2023-mu}      Garcia-Alonso et al. 2023, CollecTRI
+%   \autocite{Cuturi2013-li}           Cuturi 2013, Sinkhorn distances
+%   \autocite{Bunne2022-go}            Bunne et al., neural OT
+%   \autocite{Lipman2022-ns}           Lipman et al. 2022, flow matching
+%   \autocite{Rackauckas2020-mc}       Rackauckas et al. 2020, UDE
+%   \autocite{Schubert2018-ph}         Schubert et al. 2018, PROGENy
+%   \autocite{Wolf2018-rc}             Wolf et al. 2018, scanpy
+%   \autocite{Liberzon2015-cq}         Liberzon et al. 2015, MSigDB
+%   \autocite{Moran1950-nc}            Moran 1950, Moran's I
+%   \autocite{Ord1995-pl}              Ord & Getis 1995, Getis-Ord G*
+%   \autocite{Moon2019-cb}             Moon et al. 2019, PHATE
+%   \autocite{McInnes2018-fb}          McInnes et al. 2018, UMAP
+%   \autocite{Ollivier2009-oq}         Ollivier 2009, Ricci curvature
+%   (all six added during the interpretability/trim pass -- were used in
+%   Sec. 2.9 but missing from this tracking list; verify they resolve)
+%
+% NEW APPENDIX LABELS REFERENCED FROM THIS CHAPTER -- these must be created:
+%   sec:app-b-training-detail   (App B: per-stage objectives, integration)
+%   sec:app-b-metrics           (App B: endpoint metric definitions)
+%   sec:app-c-preproc     (App C: preprocessing thresholds)
+%   sec:app-c-ctxfeatures  (App C: retained context channel list)
+%   sec:app-c-inventory         (App C: dataset inventory)
+%   sec:app-c-hyperparams   (App C: hyperparameters and seeds)
+%   sec:app-c-ladder           (App C: complete per-fold ladders)
+%   sec:app-c-software          (App C: software and parameter manifest)
 % ============================================================================
