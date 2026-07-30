@@ -7,32 +7,38 @@ Author: Abraham J. Book. Advisor: Dr. Chris Bradburne, PhD (Associate Professor,
 <!-- Graphical abstract: PNG rendered from crrt_ude_schematic.pdf for inline GitHub display -->
 <p align='center'><img src='crrt_ude_schematic.png' alt='StageBridge model overview.' width='100%'></p>
 
-> **Note:** the abstract below is a working draft and will be replaced with the final thesis abstract.
+Premalignant lesions evolve within a tissue ecosystem, yet most spatial analyses read the epithelial
+cell in isolation, leaving a systems-level question open: does tissue context carry information about a
+cell's progression-aligned regulatory trajectory beyond its own state, and at what spatial scale and
+through which programs? This requires not a correlation of niche with state but an estimand that
+isolates the *additional* regulatory displacement attributable to context, within ecologically
+comparable cells, in mechanistic coordinates. This thesis develops **StageBridge**, a structured
+universal differential equation that models premalignant progression as receiver-centered regulatory
+transport. It separates an intrinsic progression field from a niche-gated context field and reports
+their endpoint difference as a per-program conditional context residual, *R*<sub>cond</sub>, in named
+pathway and transcription-factor coordinates. The transport correspondence is built only from
+regulatory-state distance within coarse ecological strata, so ecology is not encoded into the pairing,
+and the coupling was selected against a frozen identifiability benchmark that falsified an initial
+state-neutral formulation before any real data were analyzed.
 
-Premalignant epithelial lesions progress within tissue ecosystems whose inflammatory and stromal
-composition changes across the precursor sequence, yet whether the local microenvironment alters an
-epithelial cell's progression-aligned regulatory state beyond its own intrinsic state---and at what
-spatial scale---has been difficult to isolate, because cross-sectional profiling captures snapshots
-rather than trajectories and confounds cell state with tissue context. This thesis develops
-StageBridge, a biologically structured universal differential equation that separates an intrinsic
-regulatory-progression field from a niche-gated context field and defines a per-program, conditional
-context residual, R_cond, as the additional regulatory displacement attributable to local ecology
-within ecologically comparable cells. The transport coupling underlying the estimand was selected
-against a frozen synthetic identifiability benchmark, which falsified an initial state-neutral coupling
-and motivated the conditional-stratified formulation used throughout. Applied to a patient-held-out
-lung adenocarcinoma precursor cohort spanning atypical adenomatous hyperplasia (AAH), adenocarcinoma
-in situ (AIS), and invasive disease, StageBridge recovered a small, reproducible set of
-context-associated regulatory programs---twenty-nine on the preinvasive AAH-to-AIS edge and
-twenty-eight at the AIS-to-invasive boundary---forming a coordinated WNT, p53, TRAIL, and AP-1 axis
-with coupled interferon and TGF-beta-effector suppression, sign-consistent across all folds and donors
-and concordant with co-expression analysis. A pre-registered falsification ladder then showed that this
-contextual information did not resolve at the single-cell-neighborhood scale: cell-resolved niche did
-not outperform specimen-level ecology or a matched shuffle, and a variance decomposition attributed
-the result to niche-composition variance that, though overwhelmingly cell-local, is stage-invariant at
-the available resolution. A pancreatic precursor series returned a correctly calibrated null. StageBridge
-therefore supports a reproducible, interpretable context-associated component of premalignant epithelial
-progression while defining the unresolved spatial scale of that association, contributing a prespecified
-estimand with a characterized recovery boundary rather than an unqualified positive claim.
+Applied to a patient-held-out lung adenocarcinoma precursor atlas, StageBridge recovered a small,
+coordinated set of reproducible context residuals — twenty-nine programs on the preinvasive edge,
+twenty-eight at invasion — stable in sign across all five folds and under leave-one-donor-out
+resampling, forming coherent p53/WNT/TRAIL/AP-1, VEGF-suppressed lineage-reorganizing, and
+metabolic–interferon axes. Because each residual is carried in interpretable coordinates, the framework
+connects population transport to testable hypotheses: an *R*<sub>cond</sub>-gated communication analysis
+nominated a reciprocal macrophage- and stromal-to-epithelial circuit through LRP1 and EGFR onto the FOS
+and RB1 programs.
+
+Critically, the framework also tests the boundary of its own claim. A prespecified falsification ladder
+showed that cell-resolved local context was statistically indistinguishable from a
+marginal-structure-preserving shuffle of the same features (Δ = 0.08 Sinkhorn units, 95% CI
+[−1.10, +1.26]); a variance decomposition attributed this to the ecology's spatial scale, with 85–96% of
+the implicated macrophage, fibroblast, and CAF variation residing within specimens rather than tracking
+stage. The recoverable signal is therefore specimen-scale, not uniquely receiver-local, at current
+spatial resolution. StageBridge thus separates reproducible modeled context structure from the stronger,
+unsupported claim that local niche drives progression, turning spatial population transport into a
+mechanistically actionable map with a characterized recovery boundary.
 
 ### Overview of contents
 
@@ -64,4 +70,4 @@ Library formatting requirements. Thesis content, figures, and results are the au
 
 ### Contact
 
-AJ Book --- `ajbook12@gmail.com`
+Abraham J. Book --- [@SecondBook5](https://github.com/SecondBook5) on GitHub.
