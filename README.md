@@ -4,8 +4,8 @@
 **M.S. in Bioinformatics thesis, Johns Hopkins University — Krieger School of Arts and Sciences, Advanced Academic Programs. August 2026.**
 Author: Abraham J. Book. Advisor: Dr. Chris Bradburne, PhD (Associate Professor, Department of Genetic Medicine, Johns Hopkins University).
 
-<!-- Graphical abstract: export figures/crrt_ude_schematic.pdf to .png for inline GitHub rendering -->
-<p align='center'><img src='figures/crrt_ude_schematic.png' alt='StageBridge model overview.' width='100%'></p>
+<!-- Graphical abstract: PNG rendered from crrt_ude_schematic.pdf for inline GitHub display -->
+<p align='center'><img src='crrt_ude_schematic.png' alt='StageBridge model overview.' width='100%'></p>
 
 > **Note:** the abstract below is a working draft and will be replaced with the final thesis abstract.
 
