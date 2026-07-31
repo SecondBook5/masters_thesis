@@ -1,0 +1,12 @@
+{
+  "made": [
+    "cnv burden by stage",
+    "cnv vs R_cond convergence",
+    "R_cond regulon network",
+    "DestVI training curves",
+    "DestVI mapping"
+  ],
+  "skipped": [],
+  "source_stage": "AAH",
+  "target_stage": "AIS"
+}

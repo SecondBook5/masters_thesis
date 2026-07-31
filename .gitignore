@@ -1,7 +1,8 @@
 # --- OS ---
 .DS_Store
 Thumbs.db
-
+*:Zone.Identifier
+*.zip
 # --- LaTeX build artifacts ---
 *.aux
 *.log

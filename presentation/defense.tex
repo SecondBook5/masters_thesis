@@ -946,7 +946,12 @@ epithelial state, distinguishes subtypes within identical AAH/AIS histology}
 \begin{frame}{Progression is a directed flow, not a relaxation}
   \centering
   \only<1>{\safefig[height=0.76\textheight]{dyn_potential_AAH_AIS}}%
-  \only<2->{\safefig[width=0.98\textwidth]{dyn_helmholtz_AAH_AIS}}%
+  \only<2>{\safefig[width=0.98\textwidth]{dyn_helmholtz_AAH_AIS}\\[.15em]
+    {\footnotesize preinvasive edge --- gradient part is the landscape, rotational
+    part is non-equilibrium flux; \hl{flux fraction $0.53$}}}%
+  \only<3>{\safefig[width=0.98\textwidth]{dyn_helmholtz_AIS_invasive}\\[.15em]
+    {\footnotesize invasion edge, same decomposition --- \hl{flux fraction rises to
+    $0.76$}: the transition is markedly less gradient-like}}%
 \end{frame}
 \note{%
 A geometric read of the same fitted field, because it says something the coefficients
@@ -956,15 +961,19 @@ do not.
 a scalar potential over the manifold; cells sit in it like a Waddington surface. But a
 potential alone would mean progression is pure downhill relaxation --- and it is not.
 
-[build 2 --- Helmholtz] Decompose the field into a gradient part (equilibrium, the
-landscape) and a rotational part (non-equilibrium flux). On the preinvasive edge the
-non-equilibrium fraction is $0.53$; at invasion it rises to $0.76$. The invasion transition
-is the most strongly non-gradient --- a directed, cycle-like flow, not relaxation to a
-fixed point. And adding context changes this fraction by at most $0.01$ --- the
-non-equilibrium character is a property of the intrinsic progression field.
+[build 2 --- preinvasive Helmholtz] Decompose the field into a gradient part (equilibrium,
+the landscape) and a rotational part (non-equilibrium flux). On the preinvasive edge the
+non-equilibrium fraction is $0.53$ --- already substantially rotational, not a clean
+descent.
+
+\cue{advance} [build 3 --- invasion Helmholtz] The same decomposition at the invasion edge:
+the fraction rises to $0.76$. The invasion transition is the most strongly non-gradient ---
+a directed, cycle-like flow, not relaxation to a fixed point. And adding context changes
+this fraction by at most $0.01$ --- the non-equilibrium character is a property of the
+intrinsic progression field, not of the niche.
 
 \cue{this is the systems-biology beat --- ``landscape AND flux,'' the Wang framework.
-Say the two numbers: 0.53 preinvasive, 0.76 invasion.}
+Say the two numbers: 0.53 preinvasive, 0.76 invasion --- and now they SEE both.}
 \cue{do NOT claim thermodynamics --- it is the geometry of the FITTED field, descriptive}
 }
 
