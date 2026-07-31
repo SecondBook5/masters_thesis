@@ -529,14 +529,9 @@ changed it}
 }
 
 \begin{frame}{The context vector does not encode the receiver}
-  \vfill
-  \begin{center}
-  {\small ridge regression, ecological context $\rightarrow$ receiver state,
-  held-out}\\[1.2em]
-  {\Large\color{good}$R^2 < 0$ in all five folds}\\[.6em]
-  {\small mean $-0.54$ \quad worse than predicting the mean}
-  \end{center}
-  \vfill
+  \centering\safefig[height=0.74\textheight]{chart_identifiability}\\[.2em]
+  {\footnotesize ridge regression, ecological context $\rightarrow$ receiver
+  state, patient-held-out}
 \end{frame}
 \note{%
 One more thing has to be true before any of this is interpretable.
@@ -589,22 +584,9 @@ the correct test, is specified and not yet run. Backup B1. Do not bluff this.}
 
 \begin{frame}{The preinvasive residual is a circuit, not a list}
   \only<1>{%
-  \vfill
-  \begin{columns}[T]
-    \begin{column}{0.46\textwidth}\centering
-      {\color{bad}\textbf{Down}}\\[.5em]
-      ETV3 \quad ETV6\\ ZBTB18 \quad GLI3\\[.5em]
-      {\small\color{bad}four transcriptional repressors}
-    \end{column}
-    \begin{column}{0.46\textwidth}\centering
-      {\color{good}\textbf{Up}}\\[.5em]
-      FOS\\[.3em] p53 \quad RB1 \quad KAT5\\[.5em]
-      {\small\color{good}their target, and the checkpoint}
-    \end{column}
-  \end{columns}
-  \vfill
-  \begin{center}\hl{Loss of repression under retained restraint.}\end{center}
-  \vfill}%
+    \centering\safefig[height=0.74\textheight]{chart_preinvasive_circuit}\\[.1em]
+    {\footnotesize four repressors (ETV3/6, ZBTB18, GLI3) down; their target FOS
+    and the p53--RB1--KAT5 checkpoint up}}%
   \only<2>{\centering\safefig[height=0.80\textheight]{regulon_network}}%
 \end{frame}
 \note{%
@@ -715,20 +697,9 @@ donor preserves each donor's residual distribution and stratum counts.}
 }
 
 \begin{frame}{Interferon tone is lost \emph{before} invasion}
-  \vfill
-  \begin{center}\begin{tabular}{lcc}
-    \toprule & AAH $\rightarrow$ AIS & AIS $\rightarrow$ invasive\\
-    \midrule
-    JAK-STAT & \color{bad}$-0.246$ & ---\\
-    IRF9 & \color{bad}$-0.129$ & ---\\
-    \addlinespace
-    IFN-$\gamma$ response & \color{bad}$-1.85$ & \color{good}$+1.78$\\
-    IFN-$\alpha$ response & \color{bad}$-1.75$ & \color{good}$+1.80$\\
-    \bottomrule
-  \end{tabular}\end{center}
-  \vfill
-  \begin{center}\small two readouts, different confounds, same direction\end{center}
-  \vfill
+  \centering\safefig[height=0.74\textheight]{chart_interferon}\\[.1em]
+  {\footnotesize context residual and stage enrichment --- different confounds ---
+  agree on the preinvasive loss}
 \end{frame}
 \note{%
 This is the result I find most striking, and it inverts the intuition.
@@ -800,22 +771,9 @@ survival in mouse PDAC}
 }
 
 \begin{frame}{Invasion is a change of architecture, not more drive}
-  \vfill
-  \begin{columns}[T]
-    \begin{column}{0.46\textwidth}\centering
-      {\color{bad}\textbf{Down}}\\[.5em]
-      HDAC1 \quad CTBP1 \quad NAB2\\[.5em]
-      {\small\color{bad}three corepressors}
-    \end{column}
-    \begin{column}{0.46\textwidth}\centering
-      {\color{good}\textbf{Up}}\\[.5em]
-      MAML1 \quad FOXA1\\[.5em]
-      {\small\color{good}coactivator and pioneer factor}
-    \end{column}
-  \end{columns}
-  \vfill
-  \begin{center}\hl{Lineage identity is dismantled here, not before.}\end{center}
-  \vfill
+  \centering\safefig[height=0.74\textheight]{chart_invasion_architecture}\\[.1em]
+  {\footnotesize corepressors down, a coactivator and pioneer factor up --- lineage
+  identity is dismantled here, not before}
 \end{frame}
 \note{%
 The invasion edge is not a stronger version of the preinvasive edge. Its stable
@@ -853,22 +811,9 @@ AIS), Chan 2026 (ablating a high-plasticity state abrogates the transition)}
 }
 
 \begin{frame}{An anabolic-stress module, on the same edge}
-  \vfill
-  \begin{columns}[T]
-    \begin{column}{0.46\textwidth}\centering
-      \textbf{Context residual}\\[.5em]
-      ATF5 \quad HSF2 \quad NFKB2\\[.4em]
-      {\small stress response and proteostasis}
-    \end{column}
-    \begin{column}{0.46\textwidth}\centering
-      \textbf{Whole transcriptome}\\[.5em]
-      MYC targets \quad OxPhos\\[.4em]
-      {\small both reversed from preinvasive}
-    \end{column}
-  \end{columns}
-  \vfill
-  \begin{center}\hl{Anabolic demand and its compensation, together.}\end{center}
-  \vfill
+  \centering\safefig[height=0.74\textheight]{chart_anabolic_module}\\[.1em]
+  {\footnotesize anabolic demand and its stress-compensation machinery gain context
+  weight together}
 \end{frame}
 \note{%
 There is a second module at invasion where both readouts agree.
@@ -1072,6 +1017,7 @@ recovers it. That has not been run.
 \actcard{Act III}{At what spatial scale does this hold?}
 
 \begin{frame}{The falsification ladder}
+  \only<1>{%
   \vfill
   \begin{center}\small\begin{tabular}{ll}
     \toprule Rung & What it removes\\ \midrule
@@ -1084,7 +1030,8 @@ recovers it. That has not been run.
   \end{tabular}\end{center}
   \vfill
   \begin{center}\small paired across five patient-held-out folds\end{center}
-  \vfill
+  \vfill}%
+  \only<2>{\centering\safefig[height=0.78\textheight]{chart_ladder_perfold_AAH_AIS}}%
 \end{frame}
 \note{%
 Hypothesis two is the one that required the most machinery, so here is the design.
@@ -1113,14 +1060,9 @@ Appendix C.10 has all of them per fold.}
 }
 
 \begin{frame}{A split verdict --- and one half is a bound}
-  \centering\safefig[height=0.40\textheight]{pres_ladder_AAH_AIS}
-  \vfill
-  \begin{center}\begin{tabular}{lcc}
-    \toprule Paired contrast & $\Delta$ & 95\% CI\\ \midrule
-    Local over \textbf{shuffled} & $+0.08$ & \color{good}$[-1.10,\,+1.26]$\\
-    Local over \textbf{self-only} & $+8.76$ & \color{bad}$[-2.83,\,+20.35]$\\
-    \bottomrule
-  \end{tabular}\end{center}
+  \centering\safefig[height=0.78\textheight]{chart_verdict_preinvasive}\\[.1em]
+  {\footnotesize equivalence against shuffled context; underpowered against
+  self-only ($P\approx0.10$)}
 \end{frame}
 \note{%
 And here is the answer, which comes in two halves that have to be kept separate.
@@ -1147,16 +1089,9 @@ hold. It does not hold significantly. I am reporting the weaker outcome.
 }
 
 \begin{frame}{Why one interval is tight and the other is not}
-  \vfill
-  \begin{center}\small\begin{tabular}{lccccc c}
-    \toprule & F0 & F1 & F2 & F3 & F4 & SD\\ \midrule
-    self $-$ local & $+5.82$ & $+22.04$ & $+14.26$ & $+2.73$ & \color{bad}$-1.06$ & $9.33$\\
-    local $-$ shuffle & \multicolumn{5}{c}{\emph{folds co-move}} & $\approx1.0$\\
-    \bottomrule
-  \end{tabular}\end{center}
-  \vfill
-  \begin{center}\hl{Structural, not arbitrary.}\end{center}
-  \vfill
+  \centering\safefig[height=0.78\textheight]{chart_whytight_AAH_AIS}\\[.1em]
+  {\footnotesize the shuffle keeps the same input distribution, so its transport
+  tracks local's fold for fold --- self-only does not}
 \end{frame}
 \note{%
 The obvious question is why I trust one of those intervals and not the other, so
@@ -1185,16 +1120,9 @@ checkable by anyone. Say that.}
 }
 
 \begin{frame}{At the invasion boundary, both comparisons are null}
-  \vfill
-  \begin{center}\begin{tabular}{lcc}
-    \toprule Paired contrast & $\Delta$ & 95\% CI\\ \midrule
-    Local over shuffled & $+0.28$ & $[-5.82,\,+6.38]$\\
-    Local over self-only & $-4.59$ & $[-13.30,\,+4.11]$\\
-    \bottomrule
-  \end{tabular}\end{center}
-  \vfill
-  \begin{center}\small\hl{zero shared donors on this edge}\end{center}
-  \vfill
+  \centering\safefig[height=0.78\textheight]{chart_verdict_invasion}\\[.1em]
+  {\footnotesize a reproducible per-program signature can coexist with no
+  endpoint-predictive value --- two different questions}
 \end{frame}
 \note{%
 The invasion edge behaves the same way, more starkly.
