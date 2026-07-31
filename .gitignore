@@ -58,3 +58,7 @@ data/
 .vscode/
 .idea/
 *.swp
+
+# Raw communication-analysis tables are too large for the thesis repository.
+# Keep the rendered PDF/PNG figures, but exclude intermediate CSV outputs.
+figures/comm/**/*.csv
