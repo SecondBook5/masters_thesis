@@ -587,7 +587,15 @@ the correct test, is specified and not yet run. Backup B1. Do not bluff this.}
     \centering\safefig[height=0.74\textheight]{chart_preinvasive_circuit}\\[.1em]
     {\footnotesize four repressors (ETV3/6, ZBTB18, GLI3) down; their target FOS
     and the p53--RB1--KAT5 checkpoint up}}%
-  \only<2>{\centering\safefig[height=0.80\textheight]{regulon_network}}%
+  \only<2>{%
+    \centering\safefig[height=0.74\textheight]{scenic_rss_vs_rcond}\\[.1em]
+    {\footnotesize the same signature over all $\sim$300 SCENIC regulons: FOS most
+    context-elevated, IRF9/ETV6/SMAD4 most context-removed, and the stable set
+    (dark) is what survives all five folds}}%
+  \only<3>{%
+    \centering\safefig[height=0.80\textheight]{regulon_network}\\[.1em]
+    {\footnotesize $R_{\mathrm{cond}}$-weighted CollecTRI graph: node size $=|R_{\mathrm{cond}}|$,
+    colour $=$ cross-fold stability, edges $=$ shared targets}}%
 \end{frame}
 \note{%
 This is the slide where I think the method earns its keep, so I want to spend a
@@ -608,6 +616,13 @@ So this is not ``AP-1 activity increases.'' It is de-repression: the brakes and
 their output are observed moving in opposite directions within the same estimate.
 That is a stronger statement, and it is only available because the readout is
 signed, per-program, and named.
+
+\cue{advance} And it is not a cherry-picked handful. Plotted over all three
+hundred SCENIC regulons against their stage specificity, FOS is the single most
+context-elevated program and IRF9, ETV6 and SMAD4 sit at the context-removed
+extreme --- the darkened points are the ones stable across all five folds, so the
+circuit I just described is the tail of a genome-wide distribution, not a list I
+selected.
 
 At the same time, the p53, RB1 and KAT5 checkpoint axis is context-\emph{elevated}.
 KAT5 is worth naming: it is the acetyltransferase that acts on p53. A cofactor and
@@ -771,9 +786,18 @@ survival in mouse PDAC}
 }
 
 \begin{frame}{Invasion is a change of architecture, not more drive}
-  \centering\safefig[height=0.74\textheight]{chart_invasion_architecture}\\[.1em]
-  {\footnotesize corepressors down, a coactivator and pioneer factor up --- lineage
-  identity is dismantled here, not before}
+  \only<1>{%
+    \centering\safefig[height=0.74\textheight]{chart_invasion_architecture}\\[.1em]
+    {\footnotesize corepressors down, a coactivator and pioneer factor up --- lineage
+    identity is dismantled here, not before}}%
+  \only<2>{%
+    \centering\safefig[height=0.74\textheight]{module_umap_inv}\\[.1em]
+    {\footnotesize the actual co-expression architecture at this edge: seven modules,
+    each anchored on a lineage hub gene}}%
+  \only<3>{%
+    \centering\safefig[height=0.80\textheight]{module_enrich_inv}\\[.1em]
+    {\footnotesize and the module that carries ciliary / axonemal identity (SM7) is
+    the one whose enrichment collapses at invasion}}%
 \end{frame}
 \note{%
 The invasion edge is not a stronger version of the preinvasive edge. Its stable
@@ -794,7 +818,12 @@ The preinvasive edge removed specific repressors from a specific target module.
 This edge shifts the global balance between repressive and activating
 coregulation. That is a different kind of change.
 
-And the whole-transcriptome result on the same edge agrees. Ciliary and axonemal
+\cue{advance} You can see that architecture directly. An independent co-expression
+analysis on this edge resolves into seven modules, each anchored on a lineage hub
+--- fibroblast collagen, endothelial, myeloid, T-cell, and a ciliary module.
+
+\cue{advance} And when I score those modules for functional enrichment, the
+whole-transcriptome result agrees with the coregulator story. Ciliary and axonemal
 programs are \emph{up} preinvasively and collapse at invasion --- sensory
 perception of chemical stimulus is the single strongest enrichment on either
 edge, at minus two point six one. So differentiated lineage identity is retained

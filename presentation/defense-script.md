@@ -376,6 +376,14 @@ their output are observed moving in opposite directions within the same estimate
 That is a stronger statement, and it is only available because the readout is
 signed, per-program, and named.
 
+[CUE: advance]
+And it is not a cherry-picked handful. Plotted over all three
+hundred SCENIC regulons against their stage specificity, FOS is the single most
+context-elevated program and IRF9, ETV6 and SMAD4 sit at the context-removed
+extreme — the darkened points are the ones stable across all five folds, so the
+circuit I just described is the tail of a genome-wide distribution, not a list I
+selected.
+
 At the same time, the p53, RB1 and KAT5 checkpoint axis is context-elevated.
 KAT5 is worth naming: it is the acetyltransferase that acts on p53. A cofactor and
 its pathway both coming out stable across five folds is an internal consistency
@@ -521,7 +529,14 @@ The preinvasive edge removed specific repressors from a specific target module.
 This edge shifts the global balance between repressive and activating
 coregulation. That is a different kind of change.
 
-And the whole-transcriptome result on the same edge agrees. Ciliary and axonemal
+[CUE: advance]
+You can see that architecture directly. An independent co-expression
+analysis on this edge resolves into seven modules, each anchored on a lineage hub
+— fibroblast collagen, endothelial, myeloid, T-cell, and a ciliary module.
+
+[CUE: advance]
+And when I score those modules for functional enrichment, the
+whole-transcriptome result agrees with the coregulator story. Ciliary and axonemal
 programs are up preinvasively and collapse at invasion — sensory
 perception of chemical stimulus is the single strongest enrichment on either
 edge, at minus two point six one. So differentiated lineage identity is retained
