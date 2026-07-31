@@ -1,5 +1,5 @@
 # StageBridge
-## Niche-Conditioned Regulatory Transport in Premalignant Epithelial Progression: A Reproducible Context-Residual Estimand and the Spatial Scale of Its Recovery
+## StageBridge: Niche-Conditioned Regulatory Transport in Premalignant Epithelial Progression
 
 **M.S. in Bioinformatics thesis, Johns Hopkins University — Krieger School of Arts and Sciences, Advanced Academic Programs. August 2026.**
 Author: Abraham J. Book. Advisor: Dr. Chris Bradburne, PhD (Associate Professor, Department of Genetic Medicine, Johns Hopkins University).

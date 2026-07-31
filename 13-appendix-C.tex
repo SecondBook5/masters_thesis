@@ -6,13 +6,10 @@
 %%   results_hpc/panin/{Re_per_program,ladder,dataset_folds,Re_by_fold/*}
 %%   workflow/config.yaml, workflow/config_{aah_ais,ais_invasive}.yaml, workflow/envs/crrt.yaml,
 %%   crrt/ude/{context.py,coupling.py,field.py}, outputs/*/w_context_channels.json.
-%% \todo{...} marks anything not verifiable from a file (see report). Compilable with the
+%%  marks anything not verifiable from a file (see report). Compilable with the
 %% packages already loaded by 00-main.tex (booktabs, longtable, graphicx, xcolor); no new packages.
 %% The \appendix + \makeatletter block in 11-appendix-A.tex precedes this chapter; do NOT repeat it.
 %% ---------------------------------------------------------------------
-
-% Local placeholder macro (no todonotes dependency); prints a visible red marker.
-\providecommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
 
 \chapter{Extended Implementation and Supplementary Results}\label{chap:appendix-c}
 
@@ -20,20 +17,196 @@ This appendix records the implementation detail and the full supplementary table
 results of Chapter~\ref{chap:results}. Every numerical value is reconciled to the authoritative
 \texttt{v2lowrank\_source} run---low-rank identifiable self-field (rank $32$) with source-fixed
 context timing $w(\tau)=w_i$---so that the main-text figures and the tables here derive from a single
-set of trained fields. The material is organized as fifteen sections: the dataset inventory
-(C.1), preprocessing thresholds (C.2), the regulatory (C.3) and context (C.4) feature lists, the
-patient-fold assignments (C.5), the edge-selector configurations (C.6), the full hyperparameter and
-seed table (C.7), the coupling-geometry diagnostics (C.8), the training curves (C.9), the complete
-falsification ladders for both LUAD edges (C.10), the program-stability atlas (C.11), the
-spatial niche-association analysis (C.12), the invasion-edge supplement (C.13), the PanIN supplement
-(C.14), and the software and reproducibility manifest (C.15).
+set of trained fields. The material is organized as ten sections: the symbol index for
+Chapter~\ref{chap:methods} (C.1); the data, feature, and configuration inventory (C.2); the fitting
+diagnostics (C.3); the complete falsification ladders for both LUAD edges (C.4); the
+program-stability atlas (C.5); the spatial niche-association analysis (C.6); the invasion-edge
+supplement (C.7); the co-expression and regulon corroboration (C.8); the PanIN supplement (C.9); and
+the software and reproducibility manifest (C.10).
 
 % =====================================================================
-\section{Dataset inventory}\label{sec:app-c-inventory}
+\section{Symbol index}\label{sec:app-c-symbols}
+
+Table~\ref{tab:app-c-symbols} lists every symbol appearing in the numbered
+equations of Chapter~\ref{chap:methods}, together with the equations in which
+each occurs. Equation numbers refer to the sequential numbering of
+Chapter~\ref{chap:methods}. Symbols that recur across several sections are also
+collected in the notation table of Section~\ref{sec:methods-notation}; this
+index additionally covers symbols local to a single equation, which are defined
+at their point of use in the text but are gathered here for reference.
+Dimensions are those of the frozen LUAD analysis matrix.
+
+\begin{longtable}{@{}>{$}l<{$}p{0.19\textwidth}p{0.42\textwidth}p{0.15\textwidth}@{}}
+\caption{Every symbol appearing in the numbered equations of
+Chapter~\ref{chap:methods}, with the equations in which it occurs.}
+\label{tab:app-c-symbols}\\
+\toprule
+\textrm{Symbol} & Type / dimension & Meaning & Equations \\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\small\itshape Table~\ref{tab:app-c-symbols} continued from previous page}\\
+\toprule
+\textrm{Symbol} & Type / dimension & Meaning & Equations \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\small\itshape continued on next page}\\
+\endfoot
+\bottomrule
+\endlastfoot
+
+\multicolumn{4}{l}{\textit{Indices and sets}}\\
+\addlinespace[0.2em]
+i,\;j & index & source, target receiver & most \\
+k,\;\ell & index & regulatory coordinate & 19, 30 \\
+c & $\in\{1,\ldots,K\}$ & ecological stratum & 11--15, 33, 34 \\
+f & index & cross-validation fold & 7, 33--35 \\
+d,\;s & label & donor, pathological stage & 6, 7, 32, 38 \\
+e & label & epithelial lineage & 3 \\
+g & index & gene & 3 \\
+K & $3$ (LUAD), $2$ (PanIN) & number of ecological strata & 11 \\
+\mathcal{S},\;\mathcal{T} & sets & source-, target-stage receivers & 8, 12, 39, 43 \\
+\mathcal{E} & set & epithelial reference populations & 2 \\
+\mathcal{P} & $\subset\{1,\ldots,d_z\}$ & pathway-coordinate indices & 19 \\
+\mathcal{C}_f^{\mathrm{eval}} & set & strata with held-out common support & 34 \\
+\mathcal{D} & set & the model-ready dataset & 6 \\
+\mathcal{B}_{\mathrm{src}} & set & sampled source batch & 43 \\
+\mathcal{T}^{(1)},\mathcal{T}^{(2)} & sets & two independent target subsamples & 42, 43 \\
+
+\midrule
+\multicolumn{4}{l}{\textit{Dimensions and counts}}\\
+\addlinespace[0.2em]
+d_z & $773$ & regulatory state dimension & 4, 16, 20, 29, 39 \\
+d_w & $35$ & context dimension after leakage exclusions & 5 \\
+d_r & $14$ & pathway coordinates (the context bottleneck) & 18, 21 \\
+r_A & $32$ & rank bound on $A$ & 20 \\
+N & count & receivers in $\mathcal{D}$ & 6 \\
+N_d,\;N_{ds} & count & receivers per donor; per donor and stage & 32, 38 \\
+N_f & count & held-out source receivers in fold $f$ & 39 \\
+n_c,\;m_c & count & source, target receivers in stratum $c$ & 14 \\
+n_{\min},\;D_{\min} & $10$, $2$ & common-support thresholds & 12 \\
+D_f & count & evaluated donors in fold $f$ & 35 \\
+D_{\mathrm{eval}} & count & evaluated source-stage donors & 32 \\
+
+\midrule
+\multicolumn{4}{l}{\textit{Data and state}}\\
+\addlinespace[0.2em]
+z_i^{\mathrm{obs}} & $\mathbb{R}^{d_z}$ & observed receiver state & 1, 4, 6, 13, 16, 23, 24, 39 \\
+z(\tau) & $\mathbb{R}^{d_z}$ & state at progression coordinate $\tau$ & 17 \\
+z_\tau & $\mathbb{R}^{d_z}$ & linear interpolant between a pair & 25, 26 \\
+\overline{z} & $\mathbb{R}^{d_z}$ & pathway-masked state & 18, 19, 23, 40 \\
+z_i^{\mathrm{full}}(1) & $\mathbb{R}^{d_z}$ & endpoint, context branch active & 1, 29, 31 \\
+z_i^{\mathrm{self}}(1) & $\mathbb{R}^{d_z}$ & endpoint, context branch inactive & 1, 24, 29, 31 \\
+p_i,\;t_i & $\mathbb{R}^{14}$, $\mathbb{R}^{759}$ & pathway, TF blocks of $z$ & 4 \\
+w_i & $\mathbb{R}^{d_w}$ & ecological context & 1, 5, 6, 22, 23, 31, 38 \\
+q_i,\;h_i & --- & composition, neighborhood blocks of $w$ & 5 \\
+\overline{w}_{ds} & $\mathbb{R}^{d_w}$ & donor--stage-average context & 38 \\
+u_i & $\mathbb{R}^{2}$ & coarse CAF/immune composition & 9, 10, 11 \\
+a_i^{\mathrm{epi}} & $[0,1]$ & epithelial abundance of spot $i$ & 2, 6 \\
+x_{ig}^{\mathrm{log}} & scalar & log-normalized decoded expression & 3 \\
+\widehat{\pi}_{i\ell} & $[0,1]$ & DestVI proportion of population $\ell$ & 2 \\
+\tau & $[0,1]$ & normalized progression coordinate & 17, 18, 21--26, 31 \\
+\Delta z_{ij} & $\mathbb{R}^{d_z}$ & observed pair displacement & 16 \\
+
+\midrule
+\multicolumn{4}{l}{\textit{Model parameters}}\\
+\addlinespace[0.2em]
+A & $\mathbb{R}^{d_z\times d_z}$ & linear state-to-velocity operator, rank $\leq r_A$ & 18, 20, 23, 40 \\
+U,\;V & $\mathbb{R}^{d_z\times r_A}$, $\mathbb{R}^{r_A\times d_z}$ & factors of $A$; individually unidentifiable & 20 \\
+b & $\mathbb{R}^{d_z}$ & intercept (state-independent drift) & 18, 23, 40 \\
+B & $\mathbb{R}^{d_z\times d_r}$ & maps pathway activity into full velocity & 18, 23, 40 \\
+G & $\mathbb{R}^{d_r\times d_w}$ & context gate weights & 21, 23, 40 \\
+b_g & $\mathbb{R}^{d_r}$ & context gate bias & 21, 23, 40 \\
+M_{\mathrm{ctx}} & $\mathbb{R}^{d_z\times d_r}$ & expands gated pathway signal to full velocity & 21, 23, 40 \\
+\rho_s & neural network & self nonlinear residual field & 18, 23, 40 \\
+\rho_c & neural network & context nonlinear residual field & 21, 23, 40 \\
+\theta & --- & all trainable parameters collectively & 26 \\
+
+\midrule
+\multicolumn{4}{l}{\textit{Operators and fields}}\\
+\addlinespace[0.2em]
+r(z) & $\mathbb{R}^{d_z}\!\to\!\mathbb{R}^{d_r}$ & selects the pathway coordinates & 18, 21, 40 \\
+\gamma(w) & $[-1,1]^{d_r}$ & bounded per-pathway context modulation & 21 \\
+\odot & --- & element-wise (Hadamard) product & 21, 23, 40 \\
+\oslash & --- & element-wise division & 10 \\
+v_{\mathrm{self}} & $\mathbb{R}^{d_z}$ & intrinsic velocity branch & 17, 18, 24, 31 \\
+v_{\mathrm{context}} & $\mathbb{R}^{d_z}$ & context velocity branch & 17, 21, 31 \\
+v_{\mathrm{full}} & $\mathbb{R}^{d_z}$ & their sum, the fitted field & 17 \\
+v_{\mathrm{structured}} & $\mathbb{R}^{d_z}$ & all non-neural terms & 40, 41 \\
+v_{\mathrm{neural}} & $\mathbb{R}^{d_z}$ & $\rho_s+\rho_c$ & 40, 41 \\
+a(u_i) & function & frozen fold-fitted stratifier & 11 \\
+f(i) & function & fold assigned to receiver $i$ & 7 \\
+T_{1},\;T_{2} & $\mathbb{R}^{d_z}$ & barycentric targets under two subsamples & 42, 43 \\
+
+\midrule
+\multicolumn{4}{l}{\textit{Transport}}\\
+\addlinespace[0.2em]
+\Pi_c^{\ast} & $\mathbb{R}^{n_c\times m_c}$ & entropic transport plan within stratum $c$ & 14, 15 \\
+\Pi^{(1)}_{ij} & scalar & transport mass, source $i$ to target $j$ & 42 \\
+C_{ij} & scalar & transport cost $\lVert z_i-z_j\rVert_2^2$ & 13, 14 \\
+\varepsilon & $0.05$ & entropic regularization strength & 14, 33 \\
+\alpha_i,\;\beta_j & $1/n_c$, $1/m_c$ & uniform empirical marginals & 14 \\
+\mathcal{U}(\alpha,\beta) & set & plans with those marginals & 14 \\
+\eta_i & scalar & ecological score (first PC of $u$) & 10 \\
+c_i & $\in\{1,\ldots,K\}$ & assigned stratum & 11 \\
+b_1 & $\mathbb{R}^{2}$ & first PCA loading vector & 10 \\
+\mu_u,\;\sigma_u & $\mathbb{R}^{2}$ & training-fold mean, SD of $u$ & 10 \\
+
+\midrule
+\multicolumn{4}{l}{\textit{Estimand and evaluation}}\\
+\addlinespace[0.2em]
+R_{\mathrm{cond},i} & $\mathbb{R}^{d_z}$ & the estimand: per-receiver context residual & 1, 29, 31 \\
+R_{\mathrm{cond},ik} & scalar & the same, at coordinate $k$ & 30 \\
+\overline{R}_{\mathrm{cond},d} & $\mathbb{R}^{d_z}$ & donor-mean residual & 32 \\
+\overline{R}_{\mathrm{cond}} & $\mathbb{R}^{d_z}$ & equal-donor cohort residual & 32 \\
+\overline{R}_{fk}^{\ast(b)} & scalar & bootstrap replicate $b$, fold $f$, program $k$ & 35 \\
+D_{\mathrm{OT},fc} & scalar & per-stratum endpoint Sinkhorn cost & 33 \\
+D_{\mathrm{OT},f}^{\mathrm{conditional}} & scalar & primary endpoint metric & 34 \\
+\omega_{fc} & $[0,1]$ & source-mass weight of stratum $c$ & 34 \\
+n_{fc}^{\mathrm{src}} & count & held-out source receivers in stratum $c$ & 34 \\
+\widehat{Z}_{1,f},\;Z_{\mathrm{tgt},f} & sets & predicted, observed target populations & 33 \\
+\mathcal{L}_{\mathrm{CFM}} & scalar & flow-matching loss & 26, 27 \\
+\mathcal{L}^{(\mathrm{C})} & scalar & Stage C composite objective & 27 \\
+\lambda_{\bullet} & scalars & the five loss weights & 27, 28 \\
+\operatorname{MSE}_{\mathrm{recon}} & scalar & leakage-audit reconstruction error & 39 \\
+D_{\rho} & scalar & neural-to-structured velocity ratio & 41 \\
+D_N & scalar & transport matching-stability & 43, 44 \\
+\widehat{\Sigma}_{\mathrm{tgt}} & matrix & empirical target-state covariance & 44 \\
+
+\midrule
+\multicolumn{4}{l}{\textit{Synthetic benchmark only}}\\
+\addlinespace[0.2em]
+\Phi_{\mathrm{self}} & function & planted intrinsic transformation & 45 \\
+R_i^{\mathrm{true}} & vector & planted context displacement (ground truth) & 45 \\
+\xi_i & vector & Gaussian noise, SD $0.1$ & 45 \\
+\mathcal{G}_{\mathrm{context}} & scalar & context-gain statistic & 46 \\
+\mathrm{Var}_{\mathrm{self}},\mathrm{Var}_{\mathrm{full}} & scalar & residual variances of the two fits & 46 \\
+
+\end{longtable}
+
+Four symbol pairs were deliberately kept distinct to avoid collision:
+$\varepsilon$ (transport regularization) against $\xi$ (synthetic noise);
+$V$ (a factor of $A$) against $\mathrm{Var}_{\bullet}$ (residual variances);
+$G$ (gate weights) against $\mathcal{G}_{\mathrm{context}}$ (the gain
+statistic); and $T_{1},T_{2}$ (barycentric targets) against
+$\Phi_{\mathrm{self}}$ (the synthetic transformation). Likewise $B$ (the
+pathway map) is distinct from the batch sizes $B_{\mathrm{OT}}$ and
+$B_{\mathrm{pair}}$.
+
+% =====================================================================
+\section{Data, features, and configuration}\label{sec:app-c-config}
+
+This section collects the exact inputs and settings behind every fitted model:
+the cohorts and their sizes, the quality-control thresholds, the regulatory and
+context feature definitions, the patient-fold partition, the edge-selector
+configurations, and the complete hyperparameter and seed table. Together these
+specify what the model saw and how it was fitted.
+
+\subsection{Dataset inventory}\label{sec:app-c-inventory}
 
 The primary cohort is the LUAD progression series (single-nucleus RNA, GEO accession GSE308103),
 spanning five morphological stages, paired with matched spatial transcriptomics of the same
-specimens(GEO accession GSE307534). Cell-type reference transfer uses the Lung Cancer Atlas (LuCA, disease-aware, primary)
+specimens (GEO accession GSE307534). Cell-type reference transfer uses the Lung Cancer Atlas (LuCA, disease-aware, primary)
 and the Human Lung Cell Atlas (HLCA, ablation reference). The transferability probe is a graded
 pancreatic intraepithelial neoplasia (PanIN) Visium series (GEO accession GSE254829, seven slides)
 decoded against the PDAC single-nucleus atlas (GEO accession GSE202051).
@@ -61,8 +234,7 @@ coverage per stage is 23 Normal, 10 AAH, 12 AIS, 4 MIA, and 25 LUAD.
   \end{tabular}
 \end{table}
 
-% =====================================================================
-\section{Preprocessing thresholds}\label{sec:app-c-preproc}
+\subsection{Preprocessing thresholds}\label{sec:app-c-preproc}
 
 Quality control and feature selection were applied uniformly across all datasets before typing and
 regulatory scoring. Cells were retained with at least $200$ detected genes and at most $20\%$
@@ -87,8 +259,7 @@ These thresholds are listed in Table~\ref{tab:app-c-qc}.
   \end{tabular}
 \end{table}
 
-% =====================================================================
-\section{Regulatory feature list}\label{sec:app-c-regfeatures}
+\subsection{Regulatory feature list}\label{sec:app-c-regfeatures}
 
 The receiver regulatory state $z \in \mathbb{R}^{d_z}$ has dimension $d_z = 773$ on the LUAD edges:
 $14$ PROGENy pathway activities and $759$ CollecTRI transcription-factor regulon activities, each
@@ -103,8 +274,7 @@ and the dossier CSVs). On the PanIN edge the same construction yields $762$ prog
 ($14$ PROGENy pathways $+$ $748$ transcription factors); the transcription-factor count is smaller
 because regulons with insufficient target support in the pancreatic data are dropped at scoring time.
 
-% =====================================================================
-\section{Context feature list}\label{sec:app-c-ctxfeatures}
+\subsection{Context feature list}\label{sec:app-c-ctxfeatures}
 
 The niche-context vector $w$ is assembled per receiver from the spatial pipeline and then passed
 through the anti-leakage strip (\texttt{crrt/ude/context.py}), which removes every receiver-derived
@@ -131,8 +301,7 @@ allowlist $a(w)$ to protect the estimand from circularity: only the broad non-ep
 \texttt{stromal}, \texttt{lymphoid}, and \texttt{endothelial} fractions) are admissible for
 stratification. The primary run stratifies on \texttt{caf\_fraction} and \texttt{immune\_fraction}.
 
-% =====================================================================
-\section{Patient-fold assignments}\label{sec:app-c-folds}
+\subsection{Patient-fold assignments}\label{sec:app-c-folds}
 
 All CRRT-UDE estimates use patient-held-out cross-validation: every receiver from a given donor is
 assigned to a single fold, so no donor contributes to both training and evaluation. The frozen niche
@@ -149,32 +318,30 @@ $6,6,5,4,4$); the PanIN edge uses three folds over the seven slides.
   donors are the seven Visium slides.}
   \label{tab:app-c-folds}
   \footnotesize
-  \begin{tabular}{ll}
+  \begin{tabular}{@{}llp{0.52\textwidth}@{}}
     \toprule
-    Edge (folds, donors) & Fold assignment \\
+    Edge & Fold & Held-out donors \\
     \midrule
-    AAH$\rightarrow$AIS ($5$ folds, $20$ donors)
-      & \makecell[l]{fold 0: P8, P9, P11, P14; \quad fold 1: P20, P21, P23, P25;\\
-                     fold 2: P1, P4, P12, P19; \quad fold 3: P16, P17, P22, P24;\\
-                     fold 4: P2, P3, P5, P6} \\
+    AAH$\rightarrow$AIS      & 0 & P8, P9, P11, P14 \\
+    ($5$ folds, $20$ donors) & 1 & P20, P21, P23, P25 \\
+                             & 2 & P1, P4, P12, P19 \\
+                             & 3 & P16, P17, P22, P24 \\
+                             & 4 & P2, P3, P5, P6 \\
     \midrule
-    AIS$\rightarrow$invasive ($5$ folds, $25$ donors)
-      & \makecell[l]{fold 0: P13, P15, P19, P20, P21, P23; \quad
-                     fold 1: P1, P3, P5, P8, P11, P18;\\
-                     fold 2: P2, P9, P10, P17, P25; \quad
-                     fold 3: P6, P7, P12, P16;\\
-                     fold 4: P4, P14, P22, P24} \\
+    AIS$\rightarrow$invasive & 0 & P13, P15, P19, P20, P21, P23 \\
+    ($5$ folds, $25$ donors) & 1 & P1, P3, P5, P8, P11, P18 \\
+                             & 2 & P2, P9, P10, P17, P25 \\
+                             & 3 & P6, P7, P12, P16 \\
+                             & 4 & P4, P14, P22, P24 \\
     \midrule
-    PanIN LG$\rightarrow$HG ($3$ folds, $7$ slides)
-      & \makecell[l]{fold 0: PanIN-HG4, PanIN-LG2, PanIN-LG3; \quad
-                     fold 1: PanIN-HG2, PanIN-HG3;\\
-                     fold 2: PanIN-HG1, PanIN-LG1} \\
+    PanIN LG$\rightarrow$HG  & 0 & PanIN-HG4, PanIN-LG2, PanIN-LG3 \\
+    ($3$ folds, $7$ slides)  & 1 & PanIN-HG2, PanIN-HG3 \\
+                             & 2 & PanIN-HG1, PanIN-LG1 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-% =====================================================================
-\section{Edge-selector configurations}\label{sec:app-c-edges}
+\subsection{Edge-selector configurations}\label{sec:app-c-edges}
 
 The transport edge is selected by a dedicated configuration file layered on top of the shared base
 configuration, so that an ordinary pipeline invocation can never silently run the wrong edge. Each
@@ -188,8 +355,7 @@ invasion selector sets \texttt{source: AIS}, \texttt{target: invasive},
 \texttt{[target]} is the sentinel for ``no pooling,'' which keeps the single-stage edges byte-identical
 to the unpooled pipeline.
 
-% =====================================================================
-\section{Hyperparameters and seeds}\label{sec:app-c-hyperparams}
+\subsection{Hyperparameters and seeds}\label{sec:app-c-hyperparams}
 
 Table~\ref{tab:app-c-hyperparams} records every hyperparameter of the CRRT-UDE model and its training
 schedule, exactly as set in the run configuration. The self field uses a low-rank identifiable linear
@@ -240,7 +406,9 @@ reproducible end-to-end.
 \end{table}
 
 % =====================================================================
-\section{Coupling and transport-geometry diagnostics}\label{sec:app-c-coupling}
+\section{Fitting diagnostics}\label{sec:app-c-fitting}
+
+\subsection{Coupling and transport geometry}\label{sec:app-c-coupling}
 
 The regulatory geometry over which transport is defined was itself checked for identifiability with
 the normalized matching-stability diagnostic $D_N$, computed by bootstrap over candidate feature
@@ -250,33 +418,7 @@ the AAH$\rightarrow$AIS edge the pathway sub-space is the most stable block
 ($D_N$ per feature $0.050$ over $14$ pathways versus $0.0049$ over $759$ transcription factors),
 confirming that the estimated dynamics are identifiable on the geometry used for estimation; the
 same ordering holds on the invasion edge. The single-coordinate epithelial-program geometry is a
-degenerate reference point and is reported for completeness. The same diagnostic is plotted by candidate geometry for both edges in Figure~\ref{fig:app-c-transport-stability}.
-
-\begin{figure}[htbp]
-  \centering
-  \begin{subfigure}[t]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{figures/ude_result/transport_stability_normalized_AAH_AIS.pdf}
-    \caption{AAH$\rightarrow$AIS edge.}
-    \label{fig:app-c-transport-stability-aah}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[t]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{figures/ude_result/transport_stability_normalized_AIS_invasive.pdf}
-    \caption{AIS$\rightarrow$invasive edge.}
-    \label{fig:app-c-transport-stability-inv}
-  \end{subfigure}
-  \caption[Normalized transport-stability diagnostic by geometry, both edges]{Normalized matching-stability
-  diagnostic $D_N$ (by target variance; lower = more stable barycentric targets) across candidate coupling
-  geometries, for (a)~AAH$\rightarrow$AIS and (b)~AIS$\rightarrow$invasive; each bar annotated with its
-  feature dimension $d$. This is the plotted companion to Table~\ref{tab:app-c-dn}---a quality-control
-  diagnostic on the coupling geometry, not an inferential result: it ranks geometries by stability and
-  supports estimating transport on the pathway-plus-TF geometry while reporting effects over the pathway
-  sub-block. $D_N$ is a mini-batch quantity, not a patient-level confidence interval.}
-  \label{fig:app-c-transport-stability}
-\end{figure}
-
+degenerate reference point and is reported for completeness.
 
 \begin{table}[htbp]
   \centering
@@ -305,33 +447,7 @@ is credible in four of five folds on AAH$\rightarrow$AIS (per-fold $0.949, 0.963
 0.922$; mean $0.965$; fold 2 marginally residual-dominated at $1.008$) and in all five folds on
 AIS$\rightarrow$invasive (per-fold $0.963, 0.947, 0.955, 0.907, 0.959$; mean $0.946$). These per-fold
 credibility ratios and the transport-stability diagnostics are shown in
-Figure~\ref{fig:app-c-credibility}. A streamplot rendering of the differential (context) transport geometry itself, $\Delta v = v_{\mathrm{full}}-v_{\mathrm{self}}$, is provided for both edges in Figure~\ref{fig:app-c-diff-streamfield}.
-
-\begin{figure}[htbp]
-  \centering
-  \begin{subfigure}[t]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{figures/ude_result/difference_streamfield_AAH_AIS.pdf}
-    \caption{AAH$\rightarrow$AIS edge.}
-    \label{fig:app-c-diff-streamfield-aah}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[t]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{figures/ude_result/difference_streamfield_AIS_invasive.pdf}
-    \caption{AIS$\rightarrow$invasive edge.}
-    \label{fig:app-c-diff-streamfield-inv}
-  \end{subfigure}
-  \caption[Context-redirection streamfield, both LUAD edges]{Streamplot of the context difference field
-  $\Delta v = v_{\mathrm{full}}-v_{\mathrm{self}}$ on (a)~AAH$\rightarrow$AIS and (b)~AIS$\rightarrow$invasive---a
-  corroborating view of the per-receiver field in the main text (Fig.~\ref{fig:context_diff_field}). The
-  redirection is smoothed onto the grid and drawn as streamlines coloured and scaled by $\|\Delta v\|$
-  (clipped at the $95$th percentile), thinned to hairlines where negligible so a null region reads empty;
-  blue points are source receivers, grey the targets. Coherent streamlines mark where niche context bends
-  the flow. Descriptive, not inferential.}
-  \label{fig:app-c-diff-streamfield}
-\end{figure}
-
+Figure~\ref{fig:app-c-credibility}.
 
 \begin{figure}[htbp]
   \centering
@@ -366,32 +482,15 @@ text ($0.419$) therefore reflects a failure of cross-patient transfer, not an ab
   \label{fig:app-c-within-donor}
 \end{figure}
 
-% =====================================================================
-\section{Training curves}\label{sec:app-c-training}
+\subsection{Training curves}\label{sec:app-c-training}
 
 The three-stage training schedule converges cleanly on both LUAD edges: the Stage-A flow-matching
 loss decays over its $1000$ steps, the Stage-B residual loss decays against the frozen-self target
 over its $500$ steps, and the Stage-C anchored joint refinement produces only a small further
 reduction, confirming that the identification set in Stages A and B is preserved rather than
-overwritten. The per-stage convergence trace for each edge is shown in Figure~\ref{fig:app-c-training}.
+overwritten. The per-stage convergence trace for each edge is shown in
+Figure~\ref{fig:app-c-training}.
 
-\begin{figure}[htbp]
-  \centering
-  \begin{minipage}{0.49\textwidth}\centering
-    \includegraphics[width=\linewidth]{figures/ude_result/training_convergence_AAH_AIS.pdf}\\
-    {\footnotesize (a) AAH$\rightarrow$AIS}
-  \end{minipage}\hfill
-  \begin{minipage}{0.49\textwidth}\centering
-    \includegraphics[width=\linewidth]{figures/ude_result/training_convergence_AIS_invasive.pdf}\\
-    {\footnotesize (b) AIS$\rightarrow$invasive}
-  \end{minipage}
-  \caption[Three-stage training convergence]{Per-stage training loss for each LUAD edge. Stage~A
-  (self-field) and Stage~B (context-field on the self-residual) converge over their allotted steps,
-  and the Stage-C anchored joint refinement produces only a small further reduction---confirming that
-  the self/context identification established in Stages A and B is preserved rather than overwritten in
-  the joint step.}
-  \label{fig:app-c-training}
-\end{figure}
 
 
 \begin{figure}[htbp]
@@ -424,35 +523,7 @@ separate from \texttt{matched\_state\_shuffled} ($123.73$) or \texttt{donor\_sta
 \texttt{local\_context\_full} ($265.59$) does not improve over \texttt{spatial\_self\_only}
 ($260.99$) and is essentially tied with \texttt{donor\_stage\_average\_context} ($259.72$) and its
 own shuffle ($265.87$)---the invasion-edge refutation. The complete per-rung ladder for both edges is
-shown in Figure~\ref{fig:app-c-ladder-bars}. The per-fold endpoint Sinkhorn distances underlying these five-fold means are resolved by fold for both edges in Figure~\ref{fig:app-c-endpoint-by-fold}.
-
-\begin{figure}[htbp]
-  \centering
-  \begin{subfigure}[t]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{figures/ude_result/endpoint_metrics_by_fold_AAH_AIS.pdf}
-    \caption{AAH$\rightarrow$AIS edge.}
-    \label{fig:app-c-endpoint-by-fold-aah}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[t]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{figures/ude_result/endpoint_metrics_by_fold_AIS_invasive.pdf}
-    \caption{AIS$\rightarrow$invasive edge.}
-    \label{fig:app-c-endpoint-by-fold-inv}
-  \end{subfigure}
-  \caption[Per-fold endpoint Sinkhorn distance, both LUAD edges]{Per-fold endpoint validation of the
-  fitted full-context transport for (a)~AAH$\rightarrow$AIS and (b)~AIS$\rightarrow$invasive. Each
-  patient-held-out fold shows the Sinkhorn distance between predicted and real target distributions
-  (lower better), global beside conditional (within-niche, common-support-weighted, the supported
-  estimand); bars annotated with per-fold donor and cell counts. These resolve the
-  \texttt{local\_context\_full} row of the mean ladders (Tables~\ref{tab:app-c-ladder-aah},
-  \ref{tab:app-c-ladder-inv}) and expose the fold-to-fold heterogeneity those means average over---why
-  the paired context-versus-self contrast is underpowered on five folds. A stability diagnostic, not an
-  independent test.}
-  \label{fig:app-c-endpoint-by-fold}
-\end{figure}
-
+shown in Figure~\ref{fig:app-c-ladder-bars}.
 
 \begin{figure}[htbp]
   \centering
@@ -474,7 +545,6 @@ shown in Figure~\ref{fig:app-c-ladder-bars}. The per-fold endpoint Sinkhorn dist
   ordered by mean.}
   \label{tab:app-c-ladder-aah}
   \footnotesize
-  \resizebox{\textwidth}{!}{%
   \begin{tabular}{lcccccc}
     \toprule
     Ladder rung & Fold 0 & Fold 1 & Fold 2 & Fold 3 & Fold 4 & Mean \\
@@ -495,7 +565,7 @@ shown in Figure~\ref{fig:app-c-ladder-bars}. The per-fold endpoint Sinkhorn dist
     neural\_residuals\_only & 654.55 & 693.56 & 571.26 & 805.72 & 548.93 & 654.81 \\
     structured\_only & 2435.72 & 2655.21 & 2822.41 & 3185.60 & 2007.17 & 2621.22 \\
     \bottomrule
-  \end{tabular}}
+  \end{tabular}
 \end{table}
 
 \begin{table}[htbp]
@@ -505,7 +575,6 @@ shown in Figure~\ref{fig:app-c-ladder-bars}. The per-fold endpoint Sinkhorn dist
   ordered by mean.}
   \label{tab:app-c-ladder-inv}
   \footnotesize
-  \resizebox{\textwidth}{!}{%
   \begin{tabular}{lcccccc}
     \toprule
     Ladder rung & Fold 0 & Fold 1 & Fold 2 & Fold 3 & Fold 4 & Mean \\
@@ -526,7 +595,7 @@ shown in Figure~\ref{fig:app-c-ladder-bars}. The per-fold endpoint Sinkhorn dist
     neural\_residuals\_only & 913.42 & 912.21 & 858.28 & 794.37 & 747.29 & 845.11 \\
     structured\_only & 3041.00 & 2271.35 & 2993.02 & 2514.49 & 2725.79 & 2709.13 \\
     \bottomrule
-  \end{tabular}}
+  \end{tabular}
 \end{table}
 
 % =====================================================================
@@ -543,34 +612,7 @@ provided as machine-readable files (\texttt{Re\_per\_program\_<edge>\_v2lowrank\
 dossier CSVs \texttt{Rcond\_ALL\_AAH\_AIS.csv} and \texttt{Rcond\_ALL\_AIS\_invasive.csv}).
 Table~\ref{tab:app-c-stable-aah} lists the $29$ STABLE programs of the AAH$\rightarrow$AIS edge in
 full, with mean $R_{\mathrm{cond}}$ and its held-out $95\%$ confidence interval. The full
-$R_{\mathrm{cond}}$ spectrum across all $773$ programs is shown in Figure~\ref{fig:app-c-spectrum}. The per-receiver distribution of $R_{\mathrm{cond}}$ for the $14$ PROGENy pathways is shown for both edges in Figure~\ref{fig:app-c-re-violin}.
-
-\begin{figure}[htbp]
-  \centering
-  \begin{subfigure}[t]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{figures/ude_result/Re_violin_pathways_AAH_AIS.pdf}
-    \caption{AAH$\rightarrow$AIS edge.}
-    \label{fig:app-c-re-violin-aah}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[t]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{figures/ude_result/Re_violin_pathways_AIS_invasive.pdf}
-    \caption{AIS$\rightarrow$invasive edge.}
-    \label{fig:app-c-re-violin-inv}
-  \end{subfigure}
-  \caption[Per-receiver $R_{\mathrm{cond}}$ distribution, PROGENy pathways, both edges]{Per-receiver
-  $R_{\mathrm{cond}}$ for the $14$ PROGENy pathways on (a)~AAH$\rightarrow$AIS and
-  (b)~AIS$\rightarrow$invasive, as horizontal violins over all out-of-fold receivers, ordered by
-  $|\text{median}|$ and coloured by stability class (dashed line = no effect). Distributional complement
-  to the main-text forest (Fig.~\ref{fig:forest}): a stable pathway is a tight violin displaced from
-  zero, an unstable one straddles it. The context-upregulated p53/WNT/TRAIL at the preinvasive edge and
-  the sustained-WNT/TRAIL, suppressed-VEGF pattern at invasion show as offset violins; the rest centre on
-  zero.}
-  \label{fig:app-c-re-violin}
-\end{figure}
-
+$R_{\mathrm{cond}}$ spectrum across all $773$ programs is shown in Figure~\ref{fig:app-c-spectrum}.
 
 \begin{figure}[htbp]
   \centering
@@ -678,8 +720,8 @@ niche identity. These values are computed on the per-receiver $R_{\mathrm{cond}}
   \end{tabular}
 \end{table}
 
-\subsection{Descriptive tissue ecology across the preinvasive edge (provisional)}
-\label{sec:app-c-ecology-provisional}
+\subsection{Descriptive tissue ecology across the preinvasive edge}
+\label{sec:app-c-ecology}
 
 Table~\ref{tab:app-c-ecology} reports the donor-level mean abundance of the major ecological
 compartments in AAH versus AIS, computed on the authoritative full-cohort spatial-context table
@@ -713,8 +755,8 @@ AIS ($+0.015$), and alveolar-macrophage abundance the largest directional decrea
   \end{tabular}
 \end{table}
 
-\subsection{IL1B-macrophage niche and context-residual transport (provisional)}
-\label{sec:app-c-il1b-provisional}
+\subsection{Macrophage niche and context-residual transport}
+\label{sec:app-c-macrophage}
 
 A pre-registered hypothesis of this work is that an inflammatory macrophage niche is associated with
 the context-driven regulatory programs. Table~\ref{tab:app-c-il1b} reports a mixed model of
@@ -756,10 +798,11 @@ not the exact interval width.
 \subsection{R\textsubscript{cond}-gated cell--cell communication}
 \label{sec:app-c-comm}
 
-The main text (Section~\ref{sec:comm}) defines the R\textsubscript{cond}-gated communication framework
+Section~\ref{sec:comm} defines the R\textsubscript{cond}-gated communication framework
 and reports its headline result; the complete full-cohort output is given here. The framework infers
 ligand-receptor interactions by LIANA consensus per stage, wires receptor$\rightarrow$TF edges from
-OmniPath, retains only chains whose terminal TF program is \textsc{stable}/\textsc{directionally\_stable}
+OmniPath, retains only chains whose terminal TF program is \textsc{stable} or
+\textsc{directionally stable}
 with $|R_{\mathrm{cond}}|\geq0.05$, and scores each retained chain by the product of its L--R strength
 and the terminal program's context effect. Table~\ref{tab:app-c-comm-chains} lists the top gated chains
 per LUAD edge; all numbers derive from the completed full-cohort run
@@ -773,7 +816,7 @@ per LUAD edge; all numbers derive from the completed full-cohort run
   programs are stable (STA) or directionally-stable (DIR) context-driven programs from the per-program
   analysis.}
   \label{tab:app-c-comm-chains}
-  \resizebox{\textwidth}{!}{%
+  \footnotesize
   \begin{tabular}{llllrcr}
     \toprule
     Sender & Ligand & Receptor & Program & $R_{\mathrm{cond}}$ & Class & Score \\
@@ -793,7 +836,7 @@ per LUAD edge; all numbers derive from the completed full-cohort run
     NAF\_perineurial & DCN & EGFR & HDAC1 & $-0.204$ & DIR & 0.411 \\
     Fibro\_alveolar & DCN & EGFR & HDAC1 & $-0.204$ & DIR & 0.397 \\
     \bottomrule
-  \end{tabular}}
+  \end{tabular}
 \end{table}
 
 At the tissue scale, the differential communication network (AIS versus AAH) reorganizes around a
@@ -824,27 +867,6 @@ chains above are the subset that terminate on model-identified context-driven pr
   emphasizing the dominant sender hubs.}
   \label{fig:app-c-comm-circos}
 \end{figure}
-
-\paragraph{Differential network curvature.}
-Ollivier--Ricci curvature $\kappa$ was computed on the weighted differential communication network for
-each edge, following the construction of Section~\ref{sec:comm}; a negative curvature marks an edge
-through which signaling mass is funneled (a structural bottleneck), and the per-channel difference
-$\Delta\kappa = \kappa_{\text{target}} - \kappa_{\text{source}}$ quantifies bottleneck emergence across
-the stage transition. On the AAH$\rightarrow$AIS edge, $1{,}588$ of $2{,}415$ channels ($66\%$) become
-more bottlenecked at AIS (mean $\Delta\kappa = +0.089$; note the positive mean reflects a heavy right
-tail of a few strongly reinforced channels against many mildly bottlenecked ones). The strongest
-emerging bottlenecks are SMG-mucous$\rightarrow$$\gamma\delta$T ($\Delta\kappa=-0.49$),
-myoepithelial$\rightarrow$NK-CD11d ($-0.28$), and a cluster of innate-lymphoid-cell channels
-(ILC$\rightarrow$neuroendocrine $-0.26$, ILC$\rightarrow$SMG-duct $-0.24$, ILC$\rightarrow$secretory
-$-0.24$); the most reinforced are muscle-smooth-airway$\rightarrow$SMG-mucous ($+3.19$) and
-neuroendocrine$\rightarrow$SMG-mucous ($+2.72$), placing the submucosal-gland-mucous population at the
-center of the reorganization (Figure~\ref{fig:ricci_diff}, main text). On the AIS$\rightarrow$invasive
-edge the reorganization is more balanced ($1{,}366$ of $3{,}003$ channels, $45\%$, more bottlenecked;
-mean $\Delta\kappa=+0.135$), and the emerging bottlenecks shift toward a stromal/fibroblast convergence
-(NKT$\rightarrow$Schwann $-0.28$, and multiple $\rightarrow$perichondrial-fibroblast channels: ciliated
-$-0.27$, CD4-effector $-0.23$, CD8-EM $-0.23$). These curvature summaries are descriptive properties of
-the LIANA differential network and are not $R_{\mathrm{cond}}$-gated; they characterize how the
-communication topology---independent of the estimand---reorganizes across each transition.
 
 
 \begin{figure}[htbp]
@@ -1054,25 +1076,39 @@ reproduction. All results in this thesis were produced from the \texttt{crrt-ude
 determinism within that revision is anchored by the global seed and patient-held-out folds described
 above.
 
+
+
 \subsection*{Secondary-analysis parameters}
 
 Chapter~\ref{chap:methods} Section~\ref{sec:methods-biological-analyses} states
 what each secondary analysis asks and how its evidential status relates to the
 estimand. The settings that reproduce them are collected here.
 
-\begin{table}[htbp]
-\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.17\textwidth}%
+                    >{\raggedright\arraybackslash}p{0.21\textwidth}%
+                    >{\raggedright\arraybackslash}p{0.54\textwidth}@{}}
 \caption[Secondary-analysis tool settings]{Tool settings for the secondary
 biological analyses of Section~\ref{sec:methods-biological-analyses}. All were
 run after model fitting and none altered the receiver representation, the
 transport coupling, the differential field, or the definition of
 $R_{\mathrm{cond}}$.}
-\label{tab:app-c-tools}
-\small
-\begin{tabular}{p{0.20\textwidth}p{0.22\textwidth}p{0.50\textwidth}}
+\label{tab:app-c-tools}\\
 \toprule
 Analysis & Tool & Settings \\
 \midrule
+\endfirsthead
+\multicolumn{3}{l}{\small\itshape Table~\ref{tab:app-c-tools} continued from previous page}\\
+\toprule
+Analysis & Tool & Settings \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\small\itshape continued on next page}\\
+\endfoot
+\bottomrule
+\endlastfoot
 Stage differential expression & scanpy
   \texttt{rank\_genes\_groups} & Wilcoxon; target stage as comparison group,
   source as reference; signed statistic, log-fold change, nominal and adjusted
@@ -1121,6 +1157,4 @@ Communication & LIANA, OmniPath, CollecTRI & LIANA consensus per stage;
   chains retained only where the terminal program is stable or directionally
   stable with $|R_{\mathrm{cond}}|\geq0.05$; Ollivier--Ricci curvature for
   bottleneck ranking, exploratory \\
-\bottomrule
-\end{tabular}
-\end{table}
+\end{longtable}

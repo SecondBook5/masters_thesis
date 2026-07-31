@@ -90,6 +90,107 @@ context residual \(R_{\mathrm{cond}}\).
 \end{figure}
 
 
+\section{Notation}
+\label{sec:methods-notation}
+
+Table~\ref{tab:notation} collects the symbols used throughout this chapter.
+Each is also defined at first use in the text; the table is provided so that any
+equation can be read without searching backward for a definition. A complete
+index, covering every symbol in every numbered equation of this chapter
+together with the equations in which each appears, is given in
+Appendix~\ref{sec:app-c-symbols}.
+
+\begin{longtable}{@{}>{$}l<{$}p{0.24\textwidth}p{0.50\textwidth}@{}}
+\caption[Notation]{Notation used in Chapter~\ref{chap:methods}. Dimensions are
+those of the frozen LUAD analysis matrix.}
+\label{tab:notation}\\
+\toprule
+\textrm{Symbol} & Type / dimension & Meaning \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\small\itshape Table~\ref{tab:notation} continued from previous page}\\
+\toprule
+\textrm{Symbol} & Type / dimension & Meaning \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\small\itshape continued on next page}\\
+\endfoot
+\bottomrule
+\endlastfoot
+
+\multicolumn{3}{l}{\textit{Indices and sets}}\\
+\addlinespace[0.2em]
+i,\;j & index & source and target receiver, respectively \\
+k,\;\ell & index & regulatory coordinate (pathway or transcription factor) \\
+c & $\in\{1,\ldots,K\}$ & coarse ecological stratum; $K=3$ (LUAD), $2$ (PanIN) \\
+f & index & cross-validation fold \\
+d,\;s & label & donor identifier and pathological stage \\
+\mathcal{S},\;\mathcal{T} & sets & source- and target-stage receivers on an edge \\
+\mathcal{E} & set & epithelial reference populations \\
+\mathcal{P} & $\subset\{1,\ldots,d_z\}$ & pathway-coordinate indices \\
+\mathcal{C}_f^{\mathrm{eval}} & set & strata with held-out common support in fold $f$ \\
+
+\midrule
+\multicolumn{3}{l}{\textit{Dimensions}}\\
+\addlinespace[0.2em]
+d_z & $773$ & regulatory state dimension ($14$ pathways $+\,759$ TFs) \\
+d_w & $35$ & ecological context dimension after leakage exclusions \\
+d_r & $14$ & PROGENy pathway coordinates (the context bottleneck) \\
+r_A & $32$ & rank bound on the linear operator $A$ \\
+
+\midrule
+\multicolumn{3}{l}{\textit{Data and representations}}\\
+\addlinespace[0.2em]
+z_i^{\mathrm{obs}} & $\mathbb{R}^{d_z}$ & observed epithelial regulatory state of receiver $i$ \\
+z(\tau) & $\mathbb{R}^{d_z}$ & regulatory state at progression coordinate $\tau$ \\
+\overline{z} & $\mathbb{R}^{d_z}$ & state with pathway coordinates zeroed (Eq.~\ref{eq:methods-pathway-mask}) \\
+w_i & $\mathbb{R}^{d_w}$ & ecological context of receiver $i$ \\
+u_i & $\mathbb{R}^{2}$ & coarse CAF/immune composition used for stratification \\
+a_i^{\mathrm{epi}} & $[0,1]$ & epithelial abundance of spot $i$ \\
+\tau & $[0,1]$ & normalized progression coordinate ($0$ = source, $1$ = target) \\
+
+\midrule
+\multicolumn{3}{l}{\textit{Model parameters}}\\
+\addlinespace[0.2em]
+A=UV & $\mathbb{R}^{d_z\times d_z}$ & linear state-to-velocity operator, rank $\leq r_A$ \\
+U,\;V & $\mathbb{R}^{d_z\times r_A}$, $\mathbb{R}^{r_A\times d_z}$ & factors of $A$; individually not identifiable \\
+b & $\mathbb{R}^{d_z}$ & intercept (state-independent drift) \\
+B & $\mathbb{R}^{d_z\times d_r}$ & maps pathway activities into full velocity \\
+G,\;b_g & $\mathbb{R}^{d_r\times d_w}$, $\mathbb{R}^{d_r}$ & context gate weights and bias \\
+M_{\mathrm{ctx}} & $\mathbb{R}^{d_z\times d_r}$ & maps gated pathway signal into full velocity \\
+\rho_s,\;\rho_c & neural networks & self and context nonlinear residual fields \\
+\theta & --- & all trainable parameters collectively \\
+
+\midrule
+\multicolumn{3}{l}{\textit{Operators and derived quantities}}\\
+\addlinespace[0.2em]
+v_{\mathrm{self}} & $\mathbb{R}^{d_z}$ & intrinsic velocity branch (Eq.~\ref{eq:methods-self-field}) \\
+v_{\mathrm{context}} & $\mathbb{R}^{d_z}$ & context velocity branch (Eq.~\ref{eq:methods-context-field}) \\
+v_{\mathrm{full}} & $\mathbb{R}^{d_z}$ & their sum, the fitted field (Eq.~\ref{eq:methods-stagebridge-field}) \\
+r(z) & $\mathbb{R}^{d_z}\!\to\!\mathbb{R}^{d_r}$ & selects the $d_r$ pathway coordinates \\
+\gamma(w) & $[-1,1]^{d_r}$ & bounded per-pathway context modulation \\
+\odot,\;\oslash & --- & element-wise product and division \\
+\Pi_c^{\ast} & $\mathbb{R}^{n_c\times m_c}$ & entropic transport plan within stratum $c$ \\
+C_{ij} & scalar & transport cost, $\lVert z_i^{\mathrm{obs}}-z_j^{\mathrm{obs}}\rVert_2^2$ \\
+\varepsilon & $0.05$ & entropic regularization strength \\
+R_{\mathrm{cond},i} & $\mathbb{R}^{d_z}$ & conditional context residual (the estimand) \\
+D_{\mathrm{OT},f}^{\mathrm{conditional}} & scalar & held-out endpoint distance (Eq.~\ref{eq:methods-conditional-endpoint-cost}) \\
+D_{\rho} & scalar & neural-residual dominance ratio \\
+D_N & scalar & transport matching-stability statistic \\
+T_{1},\;T_{2} & $\mathbb{R}^{d_z}$ & barycentric targets under two target subsamples \\
+
+\midrule
+\multicolumn{3}{l}{\textit{Synthetic benchmark only}}\\
+\addlinespace[0.2em]
+\Phi_{\mathrm{self}} & function & planted intrinsic transformation \\
+R_i^{\mathrm{true}} & $\mathbb{R}^{d}$ & planted context displacement (ground truth) \\
+\xi_i & $\mathbb{R}^{d}$ & Gaussian noise, SD $0.1$ \\
+\mathcal{G}_{\mathrm{context}} & scalar & context-gain statistic (Eq.~\ref{eq:methods-synthetic-context-gain}) \\
+\mathrm{Var}_{\mathrm{self}},\;\mathrm{Var}_{\mathrm{full}} & scalar & residual variances of state-only and context-augmented fits \\
+
+\end{longtable}
+
 \section{Cohorts, progression edges, and analysis units}
 \label{sec:methods-cohorts}
 
@@ -235,7 +336,9 @@ h_i
 
 where \(q_i\) contains non-epithelial DestVI proportions for the focal spot,
 \(h_i\) contains spatial neighborhood features computed within the corresponding
-tissue section, and \(d_w\) denotes the dimensionality of the retained context representation.
+tissue section, and \(d_w\) denotes the dimensionality of the retained context
+representation after the leakage-control exclusions described below
+(\(d_w=35\) for the frozen LUAD analysis matrix).
 
 The focal composition block contained the original DestVI proportions assigned to immune, stromal, endothelial, and other non-epithelial reference populations. Broad cancer-associated fibroblast and immune fractions were also
 derived by summing disease-specific reference populations. These aggregate fractions defined the coarse ecological variables used during stratified transport construction, whereas the underlying cell-population channels
@@ -589,13 +692,18 @@ B\,r(z)
 \label{eq:methods-self-field}
 \end{equation}
 
-Here, \(r(z)\in\mathbb{R}^{d_r}\) extracts the \(d_r=14\) PROGENy pathway
-coordinates, and \(B\in\mathbb{R}^{d_z\times d_r}\) maps those activities into
-the complete regulatory velocity. The intercept
-\(b\in\mathbb{R}^{d_z}\) permits state-independent drift, while
+Each term maps a regulatory state to a regulatory velocity, so every term
+returns a vector in \(\mathbb{R}^{d_z}\). The linear operator
+\(A\in\mathbb{R}^{d_z\times d_z}\) sends the current (pathway-masked) state to a
+velocity, so entry \(A_{k\ell}\) is the contribution of coordinate \(\ell\) to
+the rate of change of coordinate \(k\). The selection operator
+\(r(z)\in\mathbb{R}^{d_r}\) extracts the \(d_r=14\) PROGENy pathway coordinates
+from the full state, and \(B\in\mathbb{R}^{d_z\times d_r}\) maps those \(14\)
+pathway activities back into the complete \(d_z\)-dimensional velocity. The
+intercept \(b\in\mathbb{R}^{d_z}\) permits state-independent drift, while
 \(\rho_s:\mathbb{R}^{d_z}\times[0,1]\rightarrow\mathbb{R}^{d_z}\)
-captures nonlinear state-dependent velocity not represented by the structured
-terms.
+is a neural network capturing nonlinear state-dependent velocity not
+represented by the structured terms.
 
 Direct pathway dependence would otherwise be represented redundantly by both
 \(A\overline{z}\) and \(B\,r(z)\). Let
@@ -614,7 +722,8 @@ z_k, & k\notin\mathcal{P}.
 
 Thus, \(B\,r(z)\) represents direct linear dependence on pathway activity, whereas \(A\overline{z}\) acts on the transcription-factor coordinates. The neural residual receives the complete unmasked state and can represent nonlinear interactions across both blocks.
 
-The linear operator was constrained to rank at most \(r_A=32\) through
+Rather than fitting the \(d_z\times d_z\) matrix \(A\) directly, it was
+written as the product of two thin matrices,
 
 \begin{equation}
 A=UV,
@@ -623,12 +732,32 @@ U\in\mathbb{R}^{d_z\times r_A},
 \qquad
 V\in\mathbb{R}^{r_A\times d_z},
 \qquad
-r_A=32.
+r_A=32,
 \label{eq:methods-low-rank-a}
 \end{equation}
 
-This factorization limits linear-field capacity and represents shared modes of regulatory change within the \(d_z=773\)-dimensional state space. The factors serve as an optimization parameterization; interpretation is assigned to the composed operator \(A=UV\), not to the individually non-identifiable matrices
-\(U\) and \(V\).
+where \(r_A\) is the inner dimension shared by the two factors. Because any
+product of a \(d_z\times r_A\) matrix with an \(r_A\times d_z\) matrix has rank
+at most \(r_A\), this construction constrains \(A\) to rank at most \(32\)
+by construction rather than by penalty.
+
+Two consequences follow. First, parameter count: an unconstrained \(A\) would
+carry \(773^2\approx 5.98\times10^5\) free parameters, whereas the factored form
+carries \(2\times773\times32\approx4.9\times10^4\), roughly a twelvefold
+reduction. Second, and more importantly for interpretation, the rank bound is a
+statement about \emph{how} the linear term is allowed to act: \(V\) first
+compresses the \(773\)-dimensional state onto \(32\) coordinates, and \(U\) then
+expands those \(32\) numbers back into a \(773\)-dimensional velocity. The
+linear contribution to regulatory velocity is therefore confined to a
+\(32\)-dimensional subspace, so the model can represent \(32\) shared modes of
+coordinated regulatory change rather than \(773\) independently varying ones.
+
+The individual factors are not identifiable: for any invertible
+\(W\in\mathbb{R}^{r_A\times r_A}\), the substitution
+\(U\mapsto UW\) and \(V\mapsto W^{-1}V\) leaves the product \(A=UV\) unchanged,
+so \(U\) and \(V\) can be rotated into one another without altering the fitted
+dynamics. They serve as an optimization parameterization only; interpretation is
+assigned to the composed operator \(A\), never to \(U\) or \(V\) separately.
 
 \subsection{Context-conditioned field}
 \label{sec:methods-context-field}
@@ -653,11 +782,23 @@ r(z)
 \label{eq:methods-context-field}
 \end{equation}
 
-The gate
-\(\gamma(w)\in[-1,1]^{d_r}\) maps ecological context to one bounded modulation score per pathway. Its element-wise interaction with \(r(z)\) conditions the structured contribution jointly on pathway activity and ecological state.
-The matrix \(M_{\mathrm{ctx}}\in\mathbb{R}^{d_z\times d_r}\) then maps the gated pathway representation into the complete regulatory velocity, while
+The gate weight matrix \(G\in\mathbb{R}^{d_r\times d_w}\) and gate bias
+\(b_g\in\mathbb{R}^{d_r}\) map the \(d_w\)-dimensional ecological context onto
+one score per pathway, and the element-wise \(\tanh\) bounds each score to
+\([-1,1]\), so
+\(\gamma(w)\in[-1,1]^{d_r}\) supplies exactly one bounded modulation
+coefficient for each of the \(d_r=14\) pathways. The symbol \(\odot\) denotes
+the element-wise (Hadamard) product, so
+\(\left[r(z)\odot\gamma(w)\right]_k=r(z)_k\,\gamma(w)_k\): each pathway's own
+activity is scaled by its own context-derived coefficient. A pathway therefore
+contributes to the context velocity only when it is both active in the receiver
+and up-weighted by that receiver's ecology.
+The matrix \(M_{\mathrm{ctx}}\in\mathbb{R}^{d_z\times d_r}\) then maps the gated
+\(14\)-dimensional pathway representation into the complete
+\(d_z\)-dimensional regulatory velocity, while
 \(\rho_c:\mathbb{R}^{d_z}\times\mathbb{R}^{d_w}\times[0,1]\rightarrow\mathbb{R}^{d_z}\)
-captures nonlinear context-conditioned velocity not represented by the pathway-gated term.
+is a neural network capturing nonlinear context-conditioned velocity not
+represented by the pathway-gated term.
 
 The structured context pathway is intentionally low dimensional: ecological information enters through \(14\) pathway channels before expansion to the full regulatory state. The \(759\) transcription-factor coordinates are not gated independently, although they may change through \(M_{\mathrm{ctx}}\) or through the unrestricted neural residual \(\rho_c\). Transcription-factor residuals therefore represent model-implied downstream displacement and cannot be uniquely attributed to direct ecological regulation of the corresponding factor or to the structured gate alone.
 
@@ -762,8 +903,11 @@ v_{\theta}(z_\tau,w_0,\tau)
 \label{eq:methods-general-cfm-loss}
 \end{equation}
 
-where \(w_0\) is the source-receiver context, held fixed along the interpolating
-path. The transport plan was re-estimated at every optimization step, so
+where \(v_\theta\) is the velocity field of
+Equation~\ref{eq:methods-stagebridge-field} with \(\theta\) collecting all
+trainable parameters (\(U\), \(V\), \(b\), \(B\), \(M_{\mathrm{ctx}}\), \(G\),
+\(b_g\), and the weights of \(\rho_s\) and \(\rho_c\)), and \(w_0\) is the
+source-receiver context, held fixed along the interpolating path. The transport plan was re-estimated at every optimization step, so
 velocity supervision was sampled continuously from the fold-specific coupling
 rather than from a fixed set of pairs. All receiver representations,
 stratifiers, couplings, and model parameters were estimated using training
@@ -850,7 +994,8 @@ of field evaluations constant across folds and falsification conditions, so
 paired comparisons did not differ in endpoint-integration budget. Dependence on
 this numerical choice was evaluated in the integration-control rung.
 
-Parameters were optimized with Adam. Each step used \(B=64\) pairs sampled from
+Parameters were optimized with Adam. Each step used
+\(B_{\mathrm{pair}}=64\) transport-sampled pairs drawn from
 a newly estimated transport plan constructed from at most \(512\) source and
 \(512\) target receivers. Gradient norms were clipped at \(10\). Minibatches
 without a stratum satisfying cross-stage common support were resampled up to
@@ -1080,7 +1225,11 @@ reloaded without refitting and applied to the held-out source and target
 receivers. A stratum entered evaluation when it contained at least five
 held-out source and five held-out target receivers, defining the held-out
 common-support set \(\mathcal{C}_f^{\mathrm{eval}}\). For each
-\(c\in\mathcal{C}_f^{\mathrm{eval}}\), the stratum-specific endpoint cost was
+\(c\in\mathcal{C}_f^{\mathrm{eval}}\), a superscript \((c)\) denotes restriction
+of a population to the receivers assigned to stratum \(c\), so
+\(\widehat{Z}_{1,f}^{(c)}\) contains the predicted endpoints of held-out source
+receivers in that stratum and \(Z_{\mathrm{tgt},f}^{(c)}\) the observed target
+states in the same stratum. The stratum-specific endpoint cost was
 
 \begin{equation}
 D_{\mathrm{OT},fc}
@@ -1465,6 +1614,13 @@ v_{\mathrm{structured}}(z,w)
 \label{eq:methods-d-rho}
 \end{equation}
 
+Both expectations are taken over held-out source receivers, so \(D_{\rho}\) is
+the ratio of average squared neural-residual velocity to average squared
+structured velocity: values below one mean the interpretable terms carry more
+of the fitted field than the neural residuals do. The \(10^{-8}\) term in the
+denominator is a numerical guard preventing division by zero if the structured
+velocity vanishes; it is negligible at any observed magnitude.
+
 The prespecified descriptive regimes were
 \(D_{\rho}\leq0.5\) for a structured regulatory-UDE regime,
 \(0.5<D_{\rho}\leq1\) for a mixed structured-neural regime, and
@@ -1478,49 +1634,62 @@ performance directly.
 \label{sec:methods-transport-stability}
 
 Transport-target stability quantified the sensitivity of inferred
-correspondence to perturbation of the sampled target population. For source
-state \(z_i\) and target subset \(A\), with entropic coupling
-\(\Pi^{(A)}\), the barycentric target assigned to \(z_i\) was
+correspondence to perturbation of the sampled target population. Let
+\(\mathcal{T}^{(1)}\subset\mathcal{T}\) denote a subsample of the target-stage
+receivers, and \(\Pi^{(1)}\) the entropic coupling computed against it. The
+\emph{barycentric target} assigned to source state \(z_i\) is the
+coupling-weighted average of the target states it is matched to,
 
 \begin{equation}
-T_A(z_i)
+T_{1}(z_i)
 =
 \frac{
-\sum_j \Pi_{ij}^{(A)}z_j^{(A)}
+\sum_j \Pi_{ij}^{(1)}z_j^{(1)}
 }{
-\sum_j \Pi_{ij}^{(A)}
-}.
+\sum_j \Pi_{ij}^{(1)}
+},
 \label{eq:methods-barycentric-target}
 \end{equation}
 
-For independently sampled target subsets \(A\) and \(B\), the
-matching-stability statistic was
+where \(\Pi_{ij}^{(1)}\) is the transport mass linking source \(i\) to target
+\(j\) within that subsample, \(z_j^{(1)}\) is that target's regulatory state,
+and the denominator normalizes by the total mass leaving source \(i\). Because
+the entropic coupling spreads mass over many targets rather than selecting one,
+\(T_1(z_i)\) summarizes where source \(i\) is sent on average.
+
+Repeating this on a second, independently drawn subsample
+\(\mathcal{T}^{(2)}\) gives a second destination \(T_2(z_i)\) for the same
+source receiver. The matching-stability statistic is the mean squared
+disagreement between the two,
 
 \begin{equation}
 D_N
 =
-\mathbb{E}_{A,B,\mathcal{B}_{\mathrm{src}}}
+\mathbb{E}_{\mathcal{T}^{(1)},\mathcal{T}^{(2)},\mathcal{B}_{\mathrm{src}}}
 \left[
 \frac{1}{
 \left|\mathcal{B}_{\mathrm{src}}\right|
 }
 \sum_{i\in\mathcal{B}_{\mathrm{src}}}
 \left\|
-T_A(z_i)
+T_{1}(z_i)
 -
-T_B(z_i)
+T_{2}(z_i)
 \right\|_2^2
 \right],
 \label{eq:methods-matching-stability}
 \end{equation}
 
-where \(\mathcal{B}_{\mathrm{src}}\) is a sampled source batch. Lower
-\(D_N\) indicates that independent target samples yield similar transport
-destinations for the same source population.
+where \(\mathcal{B}_{\mathrm{src}}\) is a sampled source batch and the
+expectation is taken over repeated draws of both target subsamples and the
+source batch. Low \(D_N\) means two independent halves of the target population
+send the same source receiver to nearly the same place, so the inferred
+correspondence does not depend on which particular target cells were sampled.
 
 The estimate used \(40\) independent draws, with source and target batches
-capped at \(4{,}096\) receivers and each target subset containing half of the
-available target population up to that cap. Because raw \(D_N\) depends on the
+capped at \(4{,}096\) receivers and each of \(\mathcal{T}^{(1)}\) and
+\(\mathcal{T}^{(2)}\) containing half of the available target population up to
+that cap. Because raw \(D_N\) depends on the
 dimension and scale of the representation, two normalized quantities were also
 reported:
 
@@ -1568,18 +1737,18 @@ z_{1i}^{\mathrm{true}}
 =
 z_{0i}
 +
-T_{\mathrm{self}}(z_{0i})
+\Phi_{\mathrm{self}}(z_{0i})
 +
 R_i^{\mathrm{true}}
 +
-\epsilon_i,
+\xi_i,
 \label{eq:methods-synthetic-dgp}
 \end{equation}
 
-where \(T_{\mathrm{self}}\) combined a stable linear transformation with a
+where \(\Phi_{\mathrm{self}}\) combined a stable linear transformation with a
 small coordinate-wise nonlinear term,
 \(R_i^{\mathrm{true}}\) was the planted context displacement, and
-\(\epsilon_i\) was Gaussian noise with standard deviation \(0.1\). True
+\(\xi_i\) was Gaussian noise with standard deviation \(0.1\). True
 source--target identities were retained only for evaluation and for the oracle
 ceiling. All non-oracle procedures received the target population after random
 permutation.
@@ -1598,19 +1767,19 @@ the recovered residual \(\widehat{R}_i\) and
 matrices, and the context-gain statistic
 
 \begin{equation}
-G_{\mathrm{context}}
+\mathcal{G}_{\mathrm{context}}
 =
 \frac{
-V_{\mathrm{self}}
+\mathrm{Var}_{\mathrm{self}}
 -
-V_{\mathrm{full}}
+\mathrm{Var}_{\mathrm{full}}
 }{
-V_{\mathrm{self}}
+\mathrm{Var}_{\mathrm{self}}
 },
 \label{eq:methods-synthetic-context-gain}
 \end{equation}
 
-where \(V_{\mathrm{self}}\) and \(V_{\mathrm{full}}\) are the residual
+where \(\mathrm{Var}_{\mathrm{self}}\) and \(\mathrm{Var}_{\mathrm{full}}\) are the residual
 variances of linear state-only and context-augmented displacement models.
 
 The benchmark included a null regime with no context displacement; a supported
@@ -1620,8 +1789,8 @@ with state--context association but no planted context effect; and a sweep over
 the alignment between context displacement and intrinsic progression.
 
 Acceptance thresholds were prespecified. The null regime required
-\(G_{\mathrm{context}}\leq0.10\). Recovery in the supported regime required
-\(G_{\mathrm{context}}\geq0.15\), median cosine similarity
+\(\mathcal{G}_{\mathrm{context}}\leq0.10\). Recovery in the supported regime required
+\(\mathcal{G}_{\mathrm{context}}\geq0.15\), median cosine similarity
 \(\geq0.50\), and flattened correlation \(\geq0.30\). The non-identifiable
 regime required the prespecified non-oracle recovery statistic to remain below
 \(0.15\). Oracle pairing defined the recoverability ceiling and was unavailable

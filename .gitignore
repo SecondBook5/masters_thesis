@@ -40,6 +40,11 @@ RESULTS_CENSUS_SYNTHESIS.md
 FINISH_CHECKLIST.md
 docs/superpowers/
 
+# --- Claude Code / agent working files (not part of the thesis) ---
+.claude/
+CLAUDE.local.md
+.remember/
+
 # --- WIP: not ready to commit yet (revisit before release) ---
 drafts/
 
