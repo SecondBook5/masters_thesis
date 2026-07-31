@@ -42,7 +42,7 @@
 
 % ---- fail-soft graphics -----------------------------------------------------
 \makeatletter
-\def\sf@dirs{,figures/,figures/presentation/,figures/grn/,figures/scenic/,figures/gsea/,figures/comm/}
+\def\sf@dirs{,figures/,figures/presentation/,figures/anim/,figures/dynamics/,figures/grn/,figures/scenic/,figures/gsea/,figures/comm/}
 \def\sf@exts{.pdf,.png,.jpg,.jpeg,.PDF,.PNG}
 \newcommand{\safefig}[2][width=.9\linewidth]{%
   \gdef\sf@hit{}%
@@ -189,6 +189,29 @@ Everything after this is the construction of that quantity and the attempt to
 falsify it.
 
 \cue{fifteen seconds --- do not elaborate, the method is the next act}
+}
+
+% --- BIORENDER mechanism figure (USER supplies art) --------------------------
+% Drop the exported BioRender PNG/PDF at figures/biorender_mechanism.pdf and it
+% appears automatically; until then a labelled placeholder renders (safefig fail-soft).
+% Spec for the art is in presentation/BIORENDER_SPEC.md.
+\begin{frame}{The premalignant niche: a candidate mechanism}
+  \centering
+  \safefig[height=0.78\textheight]{biorender_mechanism}
+\end{frame}
+\note{%
+Before the method, the biological hypothesis in one picture. A premalignant epithelial
+lesion --- AAH or AIS --- sits inside a remodelling microenvironment: an IL1B-high
+macrophage niche, activated fibroblasts, and an immune compartment that is spatially
+organised rather than diffuse. The candidate mechanism is that signals from that niche
+--- routed through receptors on the epithelial cell --- redirect its regulatory program
+as it progresses, over and above what the cell's own state would do.
+
+That is the ``tissue-held'' arrow made concrete. The rest of the talk asks whether that
+arrow carries measurable, reproducible information, and at what spatial scale.
+
+\cue{this is the one slide where you tell the biology story --- everything after is
+measurement. Keep it to the niche -> receptor -> epithelial-program arrow.}
 }
 
 \begin{frame}{The measurement will not cooperate}
@@ -343,7 +366,12 @@ reason out loud, do not wait for the question}
   \only<2>{\safefig[width=0.97\textwidth]{fig1-panel-c-step2}}%
   \only<3>{\safefig[width=0.97\textwidth]{fig1-panel-c-step3}}%
   \only<4>{\safefig[width=0.97\textwidth]{fig1-panel-c-step4}}%
-  \only<5->{\safefig[width=0.97\textwidth]{fig1-panel-c-step5}}%
+  \only<5>{\safefig[width=0.97\textwidth]{fig1-panel-c-step5}}%
+  \only<6->{%
+    \safefig[width=0.72\textwidth]{fig1-panel-c-step5}\\[0.6em]
+    {\small The learned field, made explicit:}\\[0.2em]
+    $\displaystyle \frac{dz}{d\tau}=\underbrace{f_{\text{self}}(z,\tau)}_{\text{intrinsic}}
+      \;+\;\underbrace{g\!\big(w\big)\odot f_{\text{ctx}}(z,\tau)}_{\text{niche-gated, 14-d gate }g}$}%
 \end{frame}
 \note{%
 This is the model. It is a differential equation on regulatory state, and it has
@@ -377,7 +405,12 @@ more than being asked. Backup B2 has the full version.}
   \only<1>{\safefig[width=0.92\textwidth]{fig1-panel-d-step1}}%
   \only<2>{\safefig[width=0.92\textwidth]{fig1-panel-d-step2}}%
   \only<3>{\safefig[width=0.92\textwidth]{fig1-panel-d-step3}}%
-  \only<4->{\safefig[width=0.92\textwidth]{fig1-panel-d-step4}}%
+  \only<4>{\safefig[width=0.92\textwidth]{fig1-panel-d-step4}}%
+  \only<5->{%
+    \safefig[width=0.68\textwidth]{fig1-panel-d-step4}\\[0.6em]
+    {\small The estimand, one line:}\\[0.2em]
+    $\displaystyle R_{\mathrm{cond}}\big(z_i^{\text{obs}},w_i\big)=z_i^{\text{full}}(1)-z_i^{\text{self}}(1)$
+    \quad{\footnotesize (same $z_0$, same intrinsic field, context on vs.\ off)}}%
 \end{frame}
 \note{%
 And this is the estimand.
@@ -406,6 +439,26 @@ Everything I report is computed out of fold, on held-out patients only.
 \cue{say ``out of fold, held-out patients'' once here and you never defend it again}
 \cue{plant ``residual, not a level'' --- you spend it twice: on VEGF, and on
 anyone who says a finding contradicts known biology}
+}
+
+% --- REAL fitted velocity field: the concept made concrete ------------------
+\begin{frame}{The fitted field, both branches, over the real manifold}
+  \centering
+  \safefig[width=\textwidth]{dyn_velostream_AAH_AIS}
+\end{frame}
+\note{%
+That was the schematic. This is the fitted field itself, drawn as streamlines over
+the real receiver manifold. Left is the self-only branch --- the cell's own dynamics.
+Right is the full, niche-gated field. Blue are the AAH receivers at $\tau=0$; grey is
+the real AIS target.
+
+Two things to see. The flow is \emph{directed} --- it carries AAH cells toward the AIS
+region rather than relaxing to a point. And the two panels are nearly identical: the
+niche-gated field redirects transport only modestly. That is not a failure --- it is the
+first visual statement of the result I will quantify later, that the context effect is
+real but small, and that its recoverable scale is the question of this thesis.
+
+\cue{do not over-claim the difference between the panels --- the whole point is that it is subtle}
 }
 
 % --- the transport, animated (real AAH->AIS model output) --------------------
@@ -535,6 +588,7 @@ the correct test, is specified and not yet run. Backup B1. Do not bluff this.}
 }
 
 \begin{frame}{The preinvasive residual is a circuit, not a list}
+  \only<1>{%
   \vfill
   \begin{columns}[T]
     \begin{column}{0.46\textwidth}\centering
@@ -550,7 +604,8 @@ the correct test, is specified and not yet run. Backup B1. Do not bluff this.}
   \end{columns}
   \vfill
   \begin{center}\hl{Loss of repression under retained restraint.}\end{center}
-  \vfill
+  \vfill}%
+  \only<2>{\centering\safefig[height=0.80\textheight]{regulon_network}}%
 \end{frame}
 \note{%
 This is the slide where I think the method earns its keep, so I want to spend a
@@ -911,6 +966,32 @@ receiver-centred residual can make.
 
 \cue{independent support: Chen 2025 finds endothelial and stromal activity, not
 epithelial state, distinguishes subtypes within identical AAH/AIS histology}
+}
+
+% --- REAL non-equilibrium geometry: Waddington + Helmholtz -------------------
+\begin{frame}{Progression is a directed flow, not a relaxation}
+  \centering
+  \only<1>{\safefig[height=0.76\textheight]{dyn_potential_AAH_AIS}}%
+  \only<2->{\safefig[width=0.98\textwidth]{dyn_helmholtz_AAH_AIS}}%
+\end{frame}
+\note{%
+A geometric read of the same fitted field, because it says something the coefficients
+do not.
+
+[build 1 --- the landscape] First, the cell-potential landscape. The fitted field defines
+a scalar potential over the manifold; cells sit in it like a Waddington surface. But a
+potential alone would mean progression is pure downhill relaxation --- and it is not.
+
+[build 2 --- Helmholtz] Decompose the field into a gradient part (equilibrium, the
+landscape) and a rotational part (non-equilibrium flux). On the preinvasive edge the
+non-equilibrium fraction is $0.53$; at invasion it rises to $0.76$. The invasion transition
+is the most strongly non-gradient --- a directed, cycle-like flow, not relaxation to a
+fixed point. And adding context changes this fraction by at most $0.01$ --- the
+non-equilibrium character is a property of the intrinsic progression field.
+
+\cue{this is the systems-biology beat --- ``landscape AND flux,'' the Wang framework.
+Say the two numbers: 0.53 preinvasive, 0.76 invasion.}
+\cue{do NOT claim thermodynamics --- it is the geometry of the FITTED field, descriptive}
 }
 
 \begin{frame}{The gate recovers the return arm of a known circuit}
