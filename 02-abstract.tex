@@ -2,57 +2,42 @@
 
 Premalignant lesions evolve within a tissue ecosystem, yet most spatial analyses read the epithelial
 cell in isolation, leaving a systems-level question open: does tissue context carry information about a
-cell's progression-aligned regulatory trajectory beyond its own state, and at what spatial scale and
-through which programs? This requires not a correlation of niche with state but an estimand that
-isolates the \emph{additional} regulatory displacement attributable to context, within ecologically
-comparable cells, in mechanistic coordinates. This thesis develops StageBridge, a structured universal
-differential equation that models premalignant progression as receiver-centered regulatory transport.
-It separates an intrinsic progression field from a niche-gated context field and reports their endpoint
-difference as a per-program conditional context residual, $R_{\mathrm{cond}}$, in named pathway and
-transcription-factor coordinates. The transport correspondence is built only from regulatory-state
-distance within coarse ecological strata, so ecology is not encoded into the pairing, and the coupling
-was selected against a frozen identifiability benchmark that falsified an initial state-neutral
-formulation before any real data were analyzed.
+cell's progression-aligned regulatory trajectory beyond its own state, at what spatial scale, and through
+which programs? This thesis develops StageBridge, a structured universal differential equation that
+models premalignant progression as receiver-centered regulatory transport. It separates an intrinsic
+progression field from a niche-gated context field and reports their endpoint difference as a per-program
+conditional context residual, $R_{\mathrm{cond}}$, in named pathway and transcription-factor coordinates.
+Transport correspondence is built from regulatory-state distance within coarse ecological strata,
+preventing the receiver-local ecology being tested downstream from determining source--target pairing.
+The coupling was selected against a frozen identifiability benchmark that falsified an initial
+state-neutral formulation before real-data analysis.
 
 Applied to a patient-held-out lung adenocarcinoma precursor atlas, StageBridge recovered a small,
-coordinated set of reproducible context residuals---twenty-nine programs on the preinvasive edge,
-twenty-eight at invasion---stable in sign across all five folds and under leave-one-donor-out
-resampling, forming coherent p53/WNT/TRAIL/AP-1, VEGF-suppressed lineage-reorganizing, and
-metabolic--interferon axes. Because each residual is carried in interpretable coordinates, the framework
-connects population transport to testable hypotheses: an $R_{\mathrm{cond}}$-gated communication analysis
-nominated a reciprocal macrophage- and stromal-to-epithelial circuit through LRP1 and EGFR onto the FOS
-and RB1 programs.
+coordinated set of reproducible context residuals: twenty-nine programs on the preinvasive edge and
+twenty-eight at invasion, stable in sign across all five folds and under leave-one-donor-out resampling.
+These formed coherent p53/WNT/TRAIL/AP-1, VEGF-suppressed lineage-reorganizing, and
+metabolic--interferon axes. Because residuals are expressed in interpretable coordinates, an
+$R_{\mathrm{cond}}$-gated communication analysis nominated a reciprocal macrophage- and
+stromal-to-epithelial circuit through LRP1 and EGFR onto FOS and RB1 programs.
 
-Critically, the framework also tests the boundary of its own claim. A prespecified falsification ladder
-showed that cell-resolved local context was statistically indistinguishable from a
-marginal-structure-preserving shuffle of the same features ($\Delta = 0.08$ Sinkhorn units, $95\%$ CI
-$[-1.10, +1.26]$); a variance decomposition attributed this to the ecology's spatial scale, with
-$85$--$96\%$ of the implicated macrophage, fibroblast, and CAF variation residing within specimens
-rather than tracking stage. The recoverable signal is therefore specimen-scale, not uniquely
-receiver-local, at current spatial resolution. StageBridge thus separates reproducible modeled context
-structure from the stronger, unsupported claim that local niche drives progression, turning spatial
-population transport into a mechanistically actionable map with a characterized recovery boundary.
+The framework also tests the boundary of its claim. A prespecified falsification ladder showed that
+cell-resolved local context was statistically indistinguishable from a marginal-structure-preserving
+shuffle of the same features ($\Delta = 0.08$ Sinkhorn units, $95\%$ CI $[-1.10, +1.26]$). Variance
+decomposition showed that $85$--$96\%$ of implicated macrophage, fibroblast, and CAF variation resided
+within specimens rather than tracking stage. The recoverable signal is therefore specimen-scale, not
+uniquely receiver-local, at current spatial resolution. StageBridge thus separates reproducible modeled
+context structure from the stronger, unsupported claim that local niche drives progression, yielding a
+mechanistically interpretable regulatory map with a characterized recovery boundary.
 
 %% list of keywords separated by comma
 \keywords{premalignant progression, lung adenocarcinoma, spatial transcriptomics, systems biology,
 optimal transport, universal differential equations, gene regulatory networks, cell--cell communication,
 conditional inference, cancer interception}
 
-%%%% committee members (add it right after the abstract w/o page break)
+%%%% JHU asks that reader/advisor names follow the abstract body and remain with the abstract.
 \begin{singlespace}
 
-    \section*{Primary reader and thesis advisor}
-
-    Dr. Chris Bradburne, PhD \\
-    Associate Professor \\
-    Department of Genetic Medicine \\
-    Johns Hopkins University, Baltimore, MD
-
-    \section*{Secondary reader}
-
-    Professor Sarah Sowden MS MBA\\
-    Advanced Academic Programs \\
-    Krieger School of Arts and Sciences \\
-    Johns Hopkins University, Baltimore, MD
+\noindent\textbf{Primary Reader and Thesis Advisor:} Dr. Chris Bradburne, PhD\\
+\textbf{Secondary Reader:} Sarah Sowden, MS, MBA
 
 \end{singlespace}
